@@ -16,6 +16,7 @@
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0; background:radial-gradient(1200px 800px at 20% -20%, #152036 0%, transparent 60%), linear-gradient(180deg,var(--bg),var(--bg2)); color:var(--text); font:16px/1.5 Inter,system-ui,Segoe UI,Roboto,Arial; user-select:none}
+    #starfield{position:fixed; inset:0; z-index:-1}
     .wrap{max-width:1180px; margin:auto; padding:24px}
     header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px}
     h1{font-size:clamp(22px,4vw,36px); margin:0; letter-spacing:.3px; background:linear-gradient(90deg,var(--accA),var(--accB)); -webkit-background-clip:text; background-clip:text; color:transparent}
@@ -87,6 +88,7 @@
   </style>
   </head>
   <body>
+    <canvas id="starfield"></canvas>
     <div class="wrap">
       <header>
         <h1>Mom’s Escape Room</h1>
@@ -297,9 +299,10 @@
 
     <!-- ===================== FINALE ===================== -->
     <div class="finale" id="finale"
-      style="position:fixed; inset:0; display:none; place-items:center; background:rgba(5,10,20,.92); z-index:50; backdrop-filter:blur(6px)">
+      style="position:fixed; inset:0; display:none; place-items:center; background:rgba(5,10,20,.92); z-index:50; backdrop-filter:blur(6px); overflow:hidden">
+      <canvas id="parisCanvas" style="position:absolute; inset:0; z-index:0"></canvas>
       <div class="box"
-        style="background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
+        style="position:relative; z-index:1; background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
         <div class="poster"
           style="display:grid; place-items:center; margin:10px 0">
           <!-- Eiffel Tower SVG with lattice + sparkles + beret character -->
@@ -400,6 +403,26 @@
     </div>
 
     <script>
+    // ===================== IMMERSIVE STARFIELD BACKGROUND =====================
+    (function(){
+      const c=document.getElementById('starfield'); if(!c) return;
+      const ctx=c.getContext('2d');
+      function resize(){ c.width=window.innerWidth; c.height=window.innerHeight; }
+      window.addEventListener('resize', resize); resize();
+      const stars=[...Array(100)].map(()=>({x:Math.random()*c.width, y:Math.random()*c.height, r:Math.random()*1.5+0.5, v:0.05+Math.random()*0.15}));
+      function draw(){
+        ctx.clearRect(0,0,c.width,c.height);
+        for(const s of stars){
+          s.y+=s.v;
+          if(s.y>c.height){ s.y=0; s.x=Math.random()*c.width; }
+          ctx.fillStyle='rgba(255,255,255,'+(0.2+Math.random()*0.8)+')';
+          ctx.fillRect(s.x, s.y, s.r, s.r);
+        }
+        requestAnimationFrame(draw);
+      }
+      draw();
+    })();
+
     // ===================== SIMPLE SFX ENGINE (WebAudio) =====================
     const SFX = (()=>{
       let ctx=null, master=null, enabled=true;
@@ -565,7 +588,50 @@
     // ===================== FINALE =====================
     const finale = document.getElementById('finale');
     document.getElementById('closeFinale')?.addEventListener('click', ()=> { finale.style.display='none'; SFX.ui(); });
-    function showFinale(){ finale.style.display='grid'; SFX.fanfare(); confetti(); }
+    function showFinale(){ finale.style.display='grid'; SFX.fanfare(); confetti(); startParisScroll(); }
+
+    function startParisScroll(){
+      const c=document.getElementById('parisCanvas'); if(!c) return;
+      const ctx=c.getContext('2d');
+      function resize(){ c.width=finale.clientWidth; c.height=finale.clientHeight; }
+      window.addEventListener('resize', resize); resize();
+      const urls=[
+        'https://upload.wikimedia.org/wikipedia/commons/e/e6/Paris_Night.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/a/a6/Paris_ND_de_Paris.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/8/8d/Louvre_Museum_Wikimedia_Commons.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/a/a1/Eiffel_Tower_from_the_Trocadero%2C_Paris_5_February_2013.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/5/5e/Arc_de_Triomphe%2C_Paris_21_October_2010.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/0/02/Sacr%C3%A9-C%C5%93ur_Basilica%2C_Paris.jpg',
+        'https://images.unsplash.com/photo-1522098543979-ffc7f79be1fd?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1534201054487-2b6c8035fc83?auto=format&fit=crop&w=1200&q=80'
+      ];
+      const imgs=[]; let started=false;
+      function init(){
+        const sprites=[...Array(10)].map(()=>({img:null, x:0, y:0, w:220, h:150, speed:0}));
+        function reset(s, initial=false){
+          s.img=imgs[Math.floor(Math.random()*imgs.length)];
+          s.x=Math.random()*(c.width-s.w);
+          s.y=initial ? Math.random()*c.height : c.height+Math.random()*200;
+          s.speed=0.5+Math.random()*0.4;
+        }
+        sprites.forEach(s=>reset(s,true));
+        function loop(){
+          ctx.clearRect(0,0,c.width,c.height);
+          for(const s of sprites){
+            s.y-=s.speed;
+            if(s.y+s.h<0) reset(s);
+            ctx.drawImage(s.img, s.x, s.y, s.w, s.h);
+          }
+          requestAnimationFrame(loop);
+        }
+        loop();
+      }
+      urls.forEach(u=>{
+        const img=new Image(); img.crossOrigin='anonymous';
+        img.onload=()=>{ imgs.push(img); if(!started){ started=true; init(); } };
+        img.src=u;
+      });
+    }
 
     // Lightweight confetti
     function confetti(){ const box=document.getElementById('confetti'); if(!box) return; box.innerHTML=''; const n=120; for(let i=0;i<n;i++){ const s=document.createElement('div'); const size=4+Math.random()*6; s.style.position='absolute'; s.style.left=(10+Math.random()*80)+'%'; s.style.top='-20px'; s.style.width=size+'px'; s.style.height=size+'px'; s.style.background=['#22d3ee','#60a5fa','#f59e0b','#10b981','#e879f9'][i%5]; s.style.opacity='.9'; s.style.transform='rotate('+ (Math.random()*360)+'deg)'; s.style.filter='drop-shadow(0 2px 2px rgba(0,0,0,.2))'; box.appendChild(s); const dur=4+Math.random()*2; s.animate([{transform:s.style.transform, top:'-20px'}, {transform:'rotate('+(360+Math.random()*720)+'deg)', top:'110%'}], {duration: dur*1000, easing:'cubic-bezier(.3,.7,.4,1)', iterations:1, fill:'forwards'}); } setTimeout(()=>{ box.innerHTML=''; }, 7000); }
