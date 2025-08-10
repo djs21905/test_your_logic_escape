@@ -600,20 +600,28 @@
         'https://upload.wikimedia.org/wikipedia/commons/a/a6/Paris_ND_de_Paris.jpg',
         'https://upload.wikimedia.org/wikipedia/commons/8/8d/Louvre_Museum_Wikimedia_Commons.jpg'
       ];
-      const imgs=urls.map(u=>{ const img=new Image(); img.crossOrigin='anonymous'; img.src=u; return img; });
-      const sprites=[...Array(8)].map(()=>({img:imgs[Math.floor(Math.random()*imgs.length)], x:0, y:0, w:160, h:100, speed:0.3+Math.random()*0.2}));
-      function reset(s){ s.img=imgs[Math.floor(Math.random()*imgs.length)]; s.x=Math.random()*(c.width-s.w); s.y=c.height+Math.random()*c.height; }
-      sprites.forEach(reset);
-      function loop(){
-        ctx.clearRect(0,0,c.width,c.height);
-        for(const s of sprites){
-          s.y-=s.speed;
-          if(s.y+s.h<0) reset(s);
-          ctx.drawImage(s.img, s.x, s.y, s.w, s.h);
+      const imgs=[]; let loaded=0;
+      function init(){
+        const sprites=[...Array(8)].map(()=>({img:imgs[Math.floor(Math.random()*imgs.length)], x:0, y:0, w:160, h:100, speed:0.3+Math.random()*0.2}));
+        function reset(s){ s.img=imgs[Math.floor(Math.random()*imgs.length)]; s.x=Math.random()*(c.width-s.w); s.y=c.height+Math.random()*c.height; }
+        sprites.forEach(reset);
+        function loop(){
+          ctx.clearRect(0,0,c.width,c.height);
+          for(const s of sprites){
+            s.y-=s.speed;
+            if(s.y+s.h<0) reset(s);
+            ctx.drawImage(s.img, s.x, s.y, s.w, s.h);
+          }
+          requestAnimationFrame(loop);
         }
-        requestAnimationFrame(loop);
+        loop();
       }
-      loop();
+      urls.forEach(u=>{
+        const img=new Image();
+        img.onload=img.onerror=()=>{ if(++loaded===urls.length) init(); };
+        img.src=u;
+        imgs.push(img);
+      });
     }
 
     // Lightweight confetti
