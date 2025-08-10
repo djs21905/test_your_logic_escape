@@ -1,11 +1,12 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mom's Escape Room • A Little Surprise</title>
-  <meta name="description" content="Drag‑and‑drop escape room for GitHub Pages. Finale reveals a Paris trip." />
-  <style>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mom's Escape Room • A Little Surprise</title>
+    <meta name="description"
+      content="Drag‑and‑drop escape room for GitHub Pages. Finale reveals a Paris trip." />
+    <style>
     /* ===================== THEME ===================== */
     :root{
       --bg:#0a0f19; --bg2:#0b1220; --panel:#0e1626; --text:#e6edf3; --muted:#9ba3af;
@@ -84,250 +85,317 @@
     /* Motion preferences */
     @media (prefers-reduced-motion: reduce){ .room.active{animation:none} .wave{animation:none !important} }
   </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <h1>Mom’s Escape Room</h1>
-      <div class="small">A little adventure…</div>
-    </header>
-    <div class="progress"><div id="bar" class="bar"></div></div>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Mom’s Escape Room</h1>
+        <div class="small">A little adventure…</div>
+      </header>
+      <div class="progress"><div id="bar" class="bar"></div></div>
 
-    <!-- ===================== ROOM 1 ===================== -->
-    <section id="room1" class="room card active" aria-labelledby="r1h">
-      <h2 id="r1h">Room 1 – Mousetrap</h2>
-      <p class="small">Thick <b style="color:var(--wall)">red frame</b> = <b>walls</b>. Dark tiles are the <b>floor</b>. Cats are red circles. Mouse (green ring) must reach cheese (gold ring).</p>
-      <div style="display:grid; grid-template-columns: 460px 1fr; gap:16px; align-items:start">
-        <div class="grid" id="maze">
-          <div id="board" aria-hidden="true"></div>
-          <div id="cells" aria-hidden="true"></div>
-          <div id="mouse" class="token" aria-label="mouse">🐭</div>
-          <div id="goal" class="token" aria-label="cheese">🧀</div>
-          <div class="token" data-cell="0,3" aria-hidden="true">🐈</div>
-          <div class="token" data-cell="2,1" aria-hidden="true">🐈</div>
-          <div class="token" data-cell="4,1" aria-hidden="true">🐈</div>
-        </div>
-        <div>
-          <div class="small" style="margin-bottom:6px">Palette</div>
-          <div id="palette1" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px">
-            <div class="token" draggable="true" data-dir="U" title="Up">↑</div>
-            <div class="token" draggable="true" data-dir="R" title="Right">→</div>
-            <div class="token" draggable="true" data-dir="D" title="Down">↓</div>
-            <div class="token" draggable="true" data-dir="L" title="Left">←</div>
-            <button class="token" id="erase" title="Clear selected">⌫</button>
+      <!-- ===================== ROOM 1 ===================== -->
+      <section id="room1" class="room card active" aria-labelledby="r1h">
+        <h2 id="r1h">Room 1 – Mousetrap</h2>
+        <p class="small">Thick <b style="color:var(--wall)">red frame</b> =
+          <b>walls</b>. Dark tiles are the <b>floor</b>. Cats are red circles.
+          Mouse (green ring) must reach cheese (gold ring).</p>
+        <div
+          style="display:grid; grid-template-columns: 460px 1fr; gap:16px; align-items:start">
+          <div class="grid" id="maze">
+            <div id="board" aria-hidden="true"></div>
+            <div id="cells" aria-hidden="true"></div>
+            <div id="mouse" class="token" aria-label="mouse">🐭</div>
+            <div id="goal" class="token" aria-label="cheese">🧀</div>
+            <div class="token" data-cell="0,3" aria-hidden="true">🐈</div>
+            <div class="token" data-cell="2,1" aria-hidden="true">🐈</div>
+            <div class="token" data-cell="4,1" aria-hidden="true">🐈</div>
           </div>
-          <div class="small">Command slots (8 steps)</div>
-          <div id="seq" class="seq" aria-label="Command sequence"></div>
-          <div class="actions">
-            <button id="run1">Run</button>
-            <button class="ghost" id="clear1">Clear</button>
-            <button class="ghost" id="hint1">Hint</button>
-          </div>
-          <div id="msg1" class="hint" role="status" aria-live="polite"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===================== ROOM 2 ===================== -->
-    <section id="room2" class="room card" aria-labelledby="r2h">
-      <h2 id="r2h">Room 2 – The Sommelier’s Lock</h2>
-      <p class="small">Drag corks into the glasses A, B, C. When all clues glow green, you advance.</p>
-      <ul class="small" style="margin-top:-6px">
-        <li><b>A + B = 10</b></li>
-        <li><b>B &lt; C</b></li>
-        <li><b>C − A = 3</b></li>
-      </ul>
-      <div class="grid" id="wineArea">
-        <svg id="wineSVG" viewBox="0 0 560 360" aria-hidden="true">
-          <defs>
-            <linearGradient id="glassFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#c7d2fe" stop-opacity="0.5"/>
-              <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.25"/>
-            </linearGradient>
-            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <!-- Table -->
-          <rect x="20" y="300" width="520" height="20" fill="#2b3345" stroke="#1f2635"/>
-          <!-- Three glasses -->
-          <g fill="url(#glassFill)" stroke="#60a5fa" stroke-width="2.2">
-            <g transform="translate(60,30)">
-              <path d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z"/>
-            </g>
-            <g transform="translate(210,10)">
-              <path d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z"/>
-            </g>
-            <g transform="translate(360,30)">
-              <path d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z"/>
-            </g>
-          </g>
-          <!-- Letters & neon clue -->
-          <text x="95" y="275" text-anchor="middle" fill="#9ba3af" font-weight="800">A</text>
-          <text x="245" y="255" text-anchor="middle" fill="#9ba3af" font-weight="800">B</text>
-          <text x="395" y="275" text-anchor="middle" fill="#9ba3af" font-weight="800">C</text>
-          <text id="neon" x="280" y="340" text-anchor="middle" fill="#22d3ee" font-weight="800" filter="url(#glow)">A+B=10 • B&lt;C • C−A=3</text>
-        </svg>
-        <!-- Drop zones on the bowls -->
-        <div class="drop" data-accept="A" style="left:80px; top:145px">A</div>
-        <div class="drop" data-accept="B" style="left:230px; top:125px">B</div>
-        <div class="drop" data-accept="C" style="left:380px; top:145px">C</div>
-        <!-- Cork tokens -->
-        <div class="cork" data-kind="cork" data-val="3" style="left:620px; top:30px">3</div>
-        <div class="cork" data-kind="cork" data-val="4" style="left:620px; top:130px">4</div>
-        <div class="cork" data-kind="cork" data-val="5" style="left:620px; top:230px">5</div>
-        <div class="cork" data-kind="cork" data-val="6" style="left:720px; top:80px">6</div>
-        <div class="cork" data-kind="cork" data-val="7" style="left:720px; top:180px">7</div>
-      </div>
-      <div class="actions"><button class="ghost" id="hint2">Hint</button></div>
-      <div id="msg2" class="hint" role="status" aria-live="polite"></div>
-    </section>
-
-    <!-- ===================== ROOM 3 ===================== -->
-    <section id="room3" class="room card" aria-labelledby="r3h">
-      <h2 id="r3h">Room 3 – Picture Riddle (Hard Mode)</h2>
-      <p class="small">Drag the correct answers from the palette onto each card. When all three glow, the door opens.</p>
-      <div id="riddleArea" class="grid">
-        <div class="riddle-row">
-          <!-- Seine -->
-          <div class="panel" data-answer="seine">
-            <div class="art" aria-hidden="true">
-              <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-                <path d="M10 105 Q50 95 70 105 T130 105" fill="none" stroke="#38bdf8" stroke-width="4"/>
-                <rect x="20" y="40" width="28" height="18" fill="#475569" stroke="#0f172a"/>
-                <line x1="24" y1="44" x2="44" y2="44" stroke="#94a3b8"/>
-                <rect x="92" y="48" width="28" height="18" fill="#475569" stroke="#0f172a"/>
-                <line x1="96" y1="52" x2="116" y2="52" stroke="#94a3b8"/>
-                <circle cx="70" cy="30" r="8" fill="#fde68a"/>
-              </svg>
+          <div>
+            <div class="small" style="margin-bottom:6px">Palette</div>
+            <div id="palette1"
+              style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px">
+              <div class="token" draggable="true" data-dir="U"
+                title="Up">↑</div>
+              <div class="token" draggable="true" data-dir="R"
+                title="Right">→</div>
+              <div class="token" draggable="true" data-dir="D"
+                title="Down">↓</div>
+              <div class="token" draggable="true" data-dir="L"
+                title="Left">←</div>
+              <button class="token" id="erase" title="Clear selected">⌫</button>
             </div>
-            <div class="small">“Where pages meet the water and bridges keep secrets.”</div>
-            <div class="rslot" data-key="s1">Drop answer here</div>
-          </div>
-          <!-- Louvre -->
-          <div class="panel" data-answer="louvre">
-            <div class="art" aria-hidden="true">
-              <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="70,20 20,110 120,110" fill="url(#gradL)" stroke="#94a3b8"/>
-                <defs>
-                  <linearGradient id="gradL" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.35"/>
-                    <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.15"/>
-                  </linearGradient>
-                </defs>
-                <path d="M50 118 Q70 128 90 118" stroke="#f1f5f9" fill="none"/>
-              </svg>
+            <div class="small">Command slots (8 steps)</div>
+            <div id="seq" class="seq" aria-label="Command sequence"></div>
+            <div class="actions">
+              <button id="run1">Run</button>
+              <button class="ghost" id="clear1">Clear</button>
+              <button class="ghost" id="hint1">Hint</button>
             </div>
-            <div class="small">“A smile behind glass keeps watch beneath a triangle of light.”</div>
-            <div class="rslot" data-key="s2">Drop answer here</div>
-          </div>
-          <!-- Métro -->
-          <div class="panel" data-answer="metro">
-            <div class="art" aria-hidden="true">
-              <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
-                <rect x="40" y="18" width="60" height="28" rx="6" fill="#ef4444" stroke="#7f1d1d"/>
-                <text x="70" y="38" text-anchor="middle" fill="#f8fafc" font-size="16" font-weight="800">M</text>
-                <line x1="20" y1="100" x2="120" y2="100" stroke="#64748b" stroke-width="6"/>
-                <line x1="30" y1="100" x2="50" y2="130" stroke="#94a3b8"/>
-                <line x1="110" y1="100" x2="90" y2="130" stroke="#94a3b8"/>
-              </svg>
-            </div>
-            <div class="small">“Red word, iron veins — the city moves beneath your feet.”</div>
-            <div class="rslot" data-key="s3">Drop answer here</div>
+            <div id="msg1" class="hint" role="status" aria-live="polite"></div>
           </div>
         </div>
-        <div class="palette" id="riddlePalette"><div class="hintline">Drag answers from here</div></div>
-      </div>
-      <div class="actions"><button class="ghost" id="hint3">Hint</button></div>
-      <div id="msg3" class="hint" role="status" aria-live="polite"></div>
-    </section>
+      </section>
 
-    <footer class="small" style="margin-top:18px">You can move pieces anytime. <button class="ghost" id="reset">Reset game</button></footer>
-  </div>
+      <!-- ===================== ROOM 2 ===================== -->
+      <section id="room2" class="room card" aria-labelledby="r2h">
+        <h2 id="r2h">Room 2 – The Sommelier’s Lock</h2>
+        <p class="small">Drag corks into the glasses A, B, C. When all clues
+          glow green, you advance.</p>
+        <ul class="small" style="margin-top:-6px">
+          <li><b>A + B = 10</b></li>
+          <li><b>B &lt; C</b></li>
+          <li><b>C − A = 3</b></li>
+        </ul>
+        <div class="grid" id="wineArea">
+          <svg id="wineSVG" viewBox="0 0 560 360" aria-hidden="true">
+            <defs>
+              <lineargradient id="glassFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#c7d2fe" stop-opacity="0.5" />
+                <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.25" />
+              </lineargradient>
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <fegaussianblur stdDeviation="3" result="b" />
+                <femerge><femergenode in="b" /><femergenode
+                    in="SourceGraphic" /></femerge>
+              </filter>
+            </defs>
+            <!-- Table -->
+            <rect x="20" y="300" width="520" height="20" fill="#2b3345"
+              stroke="#1f2635" />
+            <!-- Three glasses -->
+            <g fill="url(#glassFill)" stroke="#60a5fa" stroke-width="2.2">
+              <g transform="translate(60,30)">
+                <path
+                  d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z" />
+              </g>
+              <g transform="translate(210,10)">
+                <path
+                  d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z" />
+              </g>
+              <g transform="translate(360,30)">
+                <path
+                  d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z" />
+              </g>
+            </g>
+            <!-- Letters & neon clue -->
+            <text x="95" y="275" text-anchor="middle" fill="#9ba3af"
+              font-weight="800">A</text>
+            <text x="245" y="255" text-anchor="middle" fill="#9ba3af"
+              font-weight="800">B</text>
+            <text x="395" y="275" text-anchor="middle" fill="#9ba3af"
+              font-weight="800">C</text>
+            <text id="neon" x="280" y="340" text-anchor="middle" fill="#22d3ee"
+              font-weight="800" filter="url(#glow)">A+B=10 • B&lt;C •
+              C−A=3</text>
+          </svg>
+          <!-- Drop zones on the bowls -->
+          <div class="drop" data-accept="A" style="left:80px; top:145px">A</div>
+          <div class="drop" data-accept="B"
+            style="left:230px; top:125px">B</div>
+          <div class="drop" data-accept="C"
+            style="left:380px; top:145px">C</div>
+          <!-- Cork tokens -->
+          <div class="cork" data-kind="cork" data-val="3"
+            style="left:620px; top:30px">3</div>
+          <div class="cork" data-kind="cork" data-val="4"
+            style="left:620px; top:130px">4</div>
+          <div class="cork" data-kind="cork" data-val="5"
+            style="left:620px; top:230px">5</div>
+          <div class="cork" data-kind="cork" data-val="6"
+            style="left:720px; top:80px">6</div>
+          <div class="cork" data-kind="cork" data-val="7"
+            style="left:720px; top:180px">7</div>
+        </div>
+        <div class="actions"><button class="ghost"
+            id="hint2">Hint</button></div>
+        <div id="msg2" class="hint" role="status" aria-live="polite"></div>
+      </section>
 
-  <!-- ===================== FINALE ===================== -->
-  <div class="finale" id="finale" style="position:fixed; inset:0; display:none; place-items:center; background:rgba(5,10,20,.92); z-index:50; backdrop-filter:blur(6px)">
-    <div class="box" style="background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
-      <div class="poster" style="display:grid; place-items:center; margin:10px 0">
-        <!-- Eiffel Tower SVG with lattice + sparkles + beret character (from v5.2, kept) -->
-        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trip to Paris">
-          <defs>
-            <linearGradient id="night" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stop-color="#0e1a3a"/>
-              <stop offset="100%" stop-color="#090f1f"/>
-            </linearGradient>
-            <radialGradient id="moonGlow" cx="72%" cy="18%" r="30%">
-              <stop offset="0%" stop-color="#fde68a" stop-opacity="0.9"/>
-              <stop offset="100%" stop-color="#fde68a" stop-opacity="0"/>
-            </radialGradient>
-            <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#cbd5e1"/>
-              <stop offset="100%" stop-color="#94a3b8"/>
-            </linearGradient>
-            <style><![CDATA[
+      <!-- ===================== ROOM 3 ===================== -->
+      <section id="room3" class="room card" aria-labelledby="r3h">
+        <h2 id="r3h">Room 3 – Picture Riddle (Hard Mode)</h2>
+        <p class="small">Drag the correct answers from the palette onto each
+          card. When all three glow, the door opens.</p>
+        <div id="riddleArea" class="grid">
+          <div class="riddle-row">
+            <!-- Seine -->
+            <div class="panel" data-answer="seine">
+              <div class="art" aria-hidden="true">
+                <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 105 Q50 95 70 105 T130 105" fill="none"
+                    stroke="#38bdf8" stroke-width="4" />
+                  <rect x="20" y="40" width="28" height="18" fill="#475569"
+                    stroke="#0f172a" />
+                  <line x1="24" y1="44" x2="44" y2="44" stroke="#94a3b8" />
+                  <rect x="92" y="48" width="28" height="18" fill="#475569"
+                    stroke="#0f172a" />
+                  <line x1="96" y1="52" x2="116" y2="52" stroke="#94a3b8" />
+                  <circle cx="70" cy="30" r="8" fill="#fde68a" />
+                </svg>
+              </div>
+              <div class="small">“Where pages meet the water and bridges keep
+                secrets.”</div>
+              <div class="rslot" data-key="s1">Drop answer here</div>
+            </div>
+            <!-- Louvre -->
+            <div class="panel" data-answer="louvre">
+              <div class="art" aria-hidden="true">
+                <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+                  <polygon points="70,20 20,110 120,110" fill="url(#gradL)"
+                    stroke="#94a3b8" />
+                  <defs>
+                    <lineargradient id="gradL" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#93c5fd"
+                        stop-opacity="0.35" />
+                      <stop offset="100%" stop-color="#60a5fa"
+                        stop-opacity="0.15" />
+                    </lineargradient>
+                  </defs>
+                  <path d="M50 118 Q70 128 90 118" stroke="#f1f5f9"
+                    fill="none" />
+                </svg>
+              </div>
+              <div class="small">“A smile behind glass keeps watch beneath a
+                triangle of light.”</div>
+              <div class="rslot" data-key="s2">Drop answer here</div>
+            </div>
+            <!-- Métro -->
+            <div class="panel" data-answer="metro">
+              <div class="art" aria-hidden="true">
+                <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="40" y="18" width="60" height="28" rx="6"
+                    fill="#ef4444" stroke="#7f1d1d" />
+                  <text x="70" y="38" text-anchor="middle" fill="#f8fafc"
+                    font-size="16" font-weight="800">M</text>
+                  <line x1="20" y1="100" x2="120" y2="100" stroke="#64748b"
+                    stroke-width="6" />
+                  <line x1="30" y1="100" x2="50" y2="130" stroke="#94a3b8" />
+                  <line x1="110" y1="100" x2="90" y2="130" stroke="#94a3b8" />
+                </svg>
+              </div>
+              <div class="small">“Red word, iron veins — the city moves beneath
+                your feet.”</div>
+              <div class="rslot" data-key="s3">Drop answer here</div>
+            </div>
+          </div>
+          <div class="palette" id="riddlePalette"><div class="hintline">Drag
+              answers from here</div></div>
+        </div>
+        <div class="actions"><button class="ghost"
+            id="hint3">Hint</button></div>
+        <div id="msg3" class="hint" role="status" aria-live="polite"></div>
+      </section>
+
+      <footer class="small" style="margin-top:18px">You can move pieces anytime.
+        <button class="ghost" id="reset">Reset game</button></footer>
+    </div>
+
+    <!-- ===================== FINALE ===================== -->
+    <div class="finale" id="finale"
+      style="position:fixed; inset:0; display:none; place-items:center; background:rgba(5,10,20,.92); z-index:50; backdrop-filter:blur(6px)">
+      <div class="box"
+        style="background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
+        <div class="poster"
+          style="display:grid; place-items:center; margin:10px 0">
+          <!-- Eiffel Tower SVG with lattice + sparkles + beret character (from v5.2, kept) -->
+          <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg"
+            role="img" aria-label="Trip to Paris">
+            <defs>
+              <lineargradient id="night" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#0e1a3a" />
+                <stop offset="100%" stop-color="#090f1f" />
+              </lineargradient>
+              <radialgradient id="moonGlow" cx="72%" cy="18%" r="30%">
+                <stop offset="0%" stop-color="#fde68a" stop-opacity="0.9" />
+                <stop offset="100%" stop-color="#fde68a" stop-opacity="0" />
+              </radialgradient>
+              <lineargradient id="steel" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#cbd5e1" />
+                <stop offset="100%" stop-color="#94a3b8" />
+              </lineargradient>
+              <style><![CDATA[
               .spark { opacity:.85; }
               .wave { transform-origin: 600px 265px; animation: wave 1s ease-in-out infinite alternate; }
               @keyframes wave { from{transform:rotate(0deg)} to{transform:rotate(18deg)} }
             ]]></style>
-          </defs>
-          <rect x="0" y="0" width="760" height="420" fill="url(#night)"/>
-          <circle cx="580" cy="70" r="110" fill="url(#moonGlow)"/>
-          <g fill="#e5e7eb" class="spark">
-            <circle cx="80" cy="60" r="1.5"/><circle cx="180" cy="40" r="1.5"/>
-            <circle cx="260" cy="90" r="1.5"/><circle cx="340" cy="30" r="1.5"/>
-            <circle cx="420" cy="70" r="1.5"/><circle cx="500" cy="40" r="1.5"/>
-            <circle cx="640" cy="110" r="1.5"/>
-          </g>
-          <g transform="translate(240,40)" fill="none" stroke="url(#steel)" stroke-width="3">
-            <path d="M130 0 L95 90 L165 90 Z"/>
-            <path d="M95 90 L62 170 L198 170 L165 90 Z"/>
-            <path d="M62 170 L36 235 L224 235 L198 170 Z"/>
-            <path d="M36 235 L15 290 L245 290 L224 235 Z"/>
-            <path d="M15 290 L0 330 L260 330 L245 290 Z"/>
-            <path d="M130 90 L130 330"/>
-            <g stroke-width="2">
-              <line x1="62" y1="170" x2="198" y2="170"/>
-              <line x1="36" y1="235" x2="224" y2="235"/>
-              <line x1="15" y1="290" x2="245" y2="290"/>
-              <line x1="62" y1="170" x2="36" y2="235"/>
-              <line x1="198" y1="170" x2="224" y2="235"/>
-              <line x1="36" y1="235" x2="15" y2="290"/>
-              <line x1="224" y1="235" x2="245" y2="290"/>
+            </defs>
+            <rect x="0" y="0" width="760" height="420" fill="url(#night)" />
+            <circle cx="580" cy="70" r="110" fill="url(#moonGlow)" />
+            <g fill="#e5e7eb" class="spark">
+              <circle cx="80" cy="60" r="1.5" /><circle cx="180" cy="40"
+                r="1.5" />
+              <circle cx="260" cy="90" r="1.5" /><circle cx="340" cy="30"
+                r="1.5" />
+              <circle cx="420" cy="70" r="1.5" /><circle cx="500" cy="40"
+                r="1.5" />
+              <circle cx="640" cy="110" r="1.5" />
             </g>
-            <path d="M52 290 Q130 250 208 290"/>
-            <path d="M78 235 Q130 210 182 235"/>
-            <path d="M100 170 Q130 155 160 170"/>
-            <g fill="#fde68a" stroke="none">
-              <circle cx="130" cy="0" r="3"/><circle cx="95" cy="90" r="2.5"/><circle cx="165" cy="90" r="2.5"/>
-              <circle cx="62" cy="170" r="2"/><circle cx="198" y1="170" r="2"/>
-              <circle cx="36" cy="235" r="2"/><circle cx="224" cy="235" r="2"/>
-              <circle cx="15" cy="290" r="2"/><circle cx="245" cy="290" r="2"/>
+            <g transform="translate(240,40)" fill="none" stroke="url(#steel)"
+              stroke-width="3">
+              <path d="M130 0 L95 90 L165 90 Z" />
+              <path d="M95 90 L62 170 L198 170 L165 90 Z" />
+              <path d="M62 170 L36 235 L224 235 L198 170 Z" />
+              <path d="M36 235 L15 290 L245 290 L224 235 Z" />
+              <path d="M15 290 L0 330 L260 330 L245 290 Z" />
+              <path d="M130 90 L130 330" />
+              <g stroke-width="2">
+                <line x1="62" y1="170" x2="198" y2="170" />
+                <line x1="36" y1="235" x2="224" y2="235" />
+                <line x1="15" y1="290" x2="245" y2="290" />
+                <line x1="62" y1="170" x2="36" y2="235" />
+                <line x1="198" y1="170" x2="224" y2="235" />
+                <line x1="36" y1="235" x2="15" y2="290" />
+                <line x1="224" y1="235" x2="245" y2="290" />
+              </g>
+              <path d="M52 290 Q130 250 208 290" />
+              <path d="M78 235 Q130 210 182 235" />
+              <path d="M100 170 Q130 155 160 170" />
+              <g fill="#fde68a" stroke="none">
+                <circle cx="130" cy="0" r="3" /><circle cx="95" cy="90"
+                  r="2.5" /><circle cx="165" cy="90" r="2.5" />
+                <circle cx="62" cy="170" r="2" /><circle cx="198" y1="170"
+                  r="2" />
+                <circle cx="36" cy="235" r="2" /><circle cx="224" cy="235"
+                  r="2" />
+                <circle cx="15" cy="290" r="2" /><circle cx="245" cy="290"
+                  r="2" />
+              </g>
             </g>
-          </g>
-          <g transform="translate(560,220)">
-            <circle cx="30" cy="20" r="20" fill="#f8fafc" stroke="#1f2937"/>
-            <circle cx="22" cy="15" r="3" fill="#1f2937"/>
-            <circle cx="38" cy="15" r="3" fill="#1f2937"/>
-            <path d="M22 28 Q30 35 38 28" stroke="#1f2937" fill="none" stroke-width="2"/>
-            <path d="M12 8 q18 -10 36 0 q-12 6 -24 6 q-6 0 -12 -6" fill="#111827" stroke="#0b1220"/>
-            <line x1="40" y1="5" x2="48" y2="8" stroke="#111827" stroke-width="3"/>
-            <rect x="10" y="38" width="40" height="28" rx="14" fill="#f8fafc" stroke="#1f2937"/>
-            <g class="wave"><g transform="translate(50,40)"><rect x="-2" y="0" width="4" height="20" rx="2" fill="#f8fafc" stroke="#1f2937"/><circle cx="0" cy="24" r="6" fill="#f8fafc" stroke="#1f2937"/></g></g>
-          </g>
-          <text x="380" y="385" text-anchor="middle" fill="#f8fafc" font-size="32" font-weight="900">TRIP TO PARIS!</text>
-        </svg>
+            <g transform="translate(560,220)">
+              <circle cx="30" cy="20" r="20" fill="#f8fafc" stroke="#1f2937" />
+              <circle cx="22" cy="15" r="3" fill="#1f2937" />
+              <circle cx="38" cy="15" r="3" fill="#1f2937" />
+              <path d="M22 28 Q30 35 38 28" stroke="#1f2937" fill="none"
+                stroke-width="2" />
+              <path d="M12 8 q18 -10 36 0 q-12 6 -24 6 q-6 0 -12 -6"
+                fill="#111827" stroke="#0b1220" />
+              <line x1="40" y1="5" x2="48" y2="8" stroke="#111827"
+                stroke-width="3" />
+              <rect x="10" y="38" width="40" height="28" rx="14" fill="#f8fafc"
+                stroke="#1f2937" />
+              <g class="wave"><g transform="translate(50,40)"><rect x="-2" y="0"
+                    width="4" height="20" rx="2" fill="#f8fafc"
+                    stroke="#1f2937" /><circle cx="0" cy="24" r="6"
+                    fill="#f8fafc" stroke="#1f2937" /></g></g>
+            </g>
+            <text x="380" y="385" text-anchor="middle" fill="#f8fafc"
+              font-size="32" font-weight="900">TRIP TO PARIS!</text>
+          </svg>
+        </div>
+        <h3 class="title"
+          style="font-size:clamp(24px,4vw,42px); margin:6px 0 4px; letter-spacing:.5px">Trip
+          to Paris</h3>
+        <p class="subtitle" style="color:#cbd5e1; margin:4px 0 10px">Pack your
+          bags — <strong>we’re taking you to Paris!</strong> ✈️🇫🇷</p>
+        <div class="actions" style="justify-content:center; margin-top:12px;">
+          <button class="ghost" id="closeFinale">Close</button>
+        </div>
+        <div id="confetti"></div>
       </div>
-      <h3 class="title" style="font-size:clamp(24px,4vw,42px); margin:6px 0 4px; letter-spacing:.5px">Trip to Paris</h3>
-      <p class="subtitle" style="color:#cbd5e1; margin:4px 0 10px">Pack your bags — <strong>we’re taking you to Paris!</strong> ✈️🇫🇷</p>
-      <div class="actions" style="justify-content:center; margin-top:12px;">
-        <button class="ghost" id="closeFinale">Close</button>
-      </div>
-      <div id="confetti"></div>
     </div>
-  </div>
 
-  <script>
+    <script>
     // ===================== PROGRESS / NAV =====================
     const bar = document.getElementById('bar');
     const rooms = ['room1','room2','room3'];
@@ -456,5 +524,5 @@
     // Lightweight confetti
     function confetti(){ const box=document.getElementById('confetti'); if(!box) return; box.innerHTML=''; const n=120; for(let i=0;i<n;i++){ const s=document.createElement('div'); const size=4+Math.random()*6; s.style.position='absolute'; s.style.left=(10+Math.random()*80)+'%'; s.style.top='-20px'; s.style.width=size+'px'; s.style.height=size+'px'; s.style.background=['#22d3ee','#60a5fa','#f59e0b','#10b981','#e879f9'][i%5]; s.style.opacity='.9'; s.style.transform='rotate('+ (Math.random()*360)+'deg)'; s.style.filter='drop-shadow(0 2px 2px rgba(0,0,0,.2))'; box.appendChild(s); const dur=4+Math.random()*2; s.animate([{transform:s.style.transform, top:'-20px'}, {transform:'rotate('+(360+Math.random()*720)+'deg)', top:'110%'}], {duration: dur*1000, easing:'cubic-bezier(.3,.7,.4,1)', iterations:1, fill:'forwards'}); } setTimeout(()=>{ box.innerHTML=''; }, 7000); }
   </script>
-</body>
+  </body>
 </html>
