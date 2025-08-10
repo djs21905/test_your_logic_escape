@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Mom's Escape Room • A Little Surprise</title>
     <meta name="description"
-      content="Drag‑and‑drop escape room for GitHub Pages. Finale reveals a Paris trip." />
+      content="Drag‑and‑drop escape room for GitHub Pages. Finale reveals a Paris trip. Now with sound effects!" />
     <style>
     /* ===================== THEME ===================== */
     :root{
@@ -90,7 +90,11 @@
     <div class="wrap">
       <header>
         <h1>Mom’s Escape Room</h1>
-        <div class="small">A little adventure…</div>
+        <div style="display:flex; align-items:center; gap:10px">
+          <div class="small">A little adventure…</div>
+          <button id="sfxToggle" class="ghost" title="Toggle sound">🔊 Sound
+            on</button>
+        </div>
       </header>
       <div class="progress"><div id="bar" class="bar"></div></div>
 
@@ -298,7 +302,7 @@
         style="background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
         <div class="poster"
           style="display:grid; place-items:center; margin:10px 0">
-          <!-- Eiffel Tower SVG with lattice + sparkles + beret character (from v5.2, kept) -->
+          <!-- Eiffel Tower SVG with lattice + sparkles + beret character -->
           <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg"
             role="img" aria-label="Trip to Paris">
             <defs>
@@ -354,7 +358,7 @@
               <g fill="#fde68a" stroke="none">
                 <circle cx="130" cy="0" r="3" /><circle cx="95" cy="90"
                   r="2.5" /><circle cx="165" cy="90" r="2.5" />
-                <circle cx="62" cy="170" r="2" /><circle cx="198" y1="170"
+                <circle cx="62" cy="170" r="2" /><circle cx="198" cy="170"
                   r="2" />
                 <circle cx="36" cy="235" r="2" /><circle cx="224" cy="235"
                   r="2" />
@@ -396,14 +400,52 @@
     </div>
 
     <script>
+    // ===================== SIMPLE SFX ENGINE (WebAudio) =====================
+    const SFX = (()=>{
+      let ctx=null, master=null, enabled=true;
+      function ensure(){
+        if(!ctx){ ctx = new (window.AudioContext||window.webkitAudioContext)(); master = ctx.createGain(); master.gain.value=0.35; master.connect(ctx.destination); }
+        if(ctx.state==='suspended') ctx.resume();
+      }
+      function toggle(on){ enabled = on; const btn=document.getElementById('sfxToggle'); btn.textContent = on ? '🔊 Sound on' : '🔇 Sound off'; if(!ctx) return; if(on && ctx.state==='suspended') ctx.resume(); if(!on && ctx.state==='running') ctx.suspend(); }
+      function env(node, t0, a=0.01, d=0.15, s=0.0005){ const g = node; g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(0.9, t0+a); g.gain.exponentialRampToValueAtTime(s, t0+a+d); }
+      function beep(freq=440, dur=0.12, type='sine'){
+        if(!enabled) return; ensure(); const now=ctx.currentTime; const o=ctx.createOscillator(); const g=ctx.createGain(); o.type=type; o.frequency.setValueAtTime(freq, now); env(g, now, 0.01, dur*0.8, 0.001); o.connect(g); g.connect(master); o.start(now); o.stop(now+dur+0.05);
+      }
+      function sweep(f1=300,f2=900,dur=0.25,type='triangle'){
+        if(!enabled) return; ensure(); const now=ctx.currentTime; const o=ctx.createOscillator(); const g=ctx.createGain(); o.type=type; o.frequency.setValueAtTime(f1, now); o.frequency.exponentialRampToValueAtTime(f2, now+dur); env(g, now, 0.01, dur*0.9, 0.001); o.connect(g); g.connect(master); o.start(now); o.stop(now+dur+0.05);
+      }
+      function noisePop(dur=0.08){
+        if(!enabled) return; ensure(); const now=ctx.currentTime; const buffer = ctx.createBuffer(1, ctx.sampleRate*dur, ctx.sampleRate); const data = buffer.getChannelData(0); for(let i=0;i<data.length;i++){ data[i] = (Math.random()*2-1) * Math.pow(1 - i/data.length, 2); } const src=ctx.createBufferSource(); src.buffer=buffer; const g=ctx.createGain(); env(g, now, 0.005, dur*0.8, 0.001); src.connect(g); g.connect(master); src.start(now);
+      }
+      function chord(freqs=[523,659,784], dur=0.5){ if(!enabled) return; ensure(); const now=ctx.currentTime; const g=ctx.createGain(); env(g, now, 0.02, dur*0.9, 0.001); g.connect(master); freqs.forEach((f,i)=>{ const o=ctx.createOscillator(); o.type='sine'; o.frequency.value=f; o.connect(g); o.start(now+i*0.002); o.stop(now+dur); }); }
+      return {
+        toggle, enable:()=>toggle(true), disable:()=>toggle(false), ensure,
+        ui:()=>beep(520,0.06,'sine'),
+        step:()=>beep(660,0.05,'square'),
+        wall:()=>beep(140,0.22,'sawtooth'),
+        cat:()=>beep(180,0.22,'sawtooth'),
+        snap:()=>sweep(300,700,0.08,'triangle'),
+        pop:()=>noisePop(0.08),
+        success:()=>chord([523,659,784],0.45),
+        unlock:()=>sweep(400,1200,0.5,'sine'),
+        fanfare:()=>{ chord([523,659,784],0.6); setTimeout(()=>chord([659,784,988],0.6),180); }
+      };
+    })();
+
+    // First user gesture unlocks audio on mobile/autoplay-restricted browsers
+    window.addEventListener('pointerdown', ()=> SFX.ensure(), { once:true });
+    document.addEventListener('keydown', ()=> SFX.ensure(), { once:true });
+
     // ===================== PROGRESS / NAV =====================
     const bar = document.getElementById('bar');
     const rooms = ['room1','room2','room3'];
-    let state = JSON.parse(localStorage.getItem('escape.mom.paris.v6.0')||'{}');
+    let state = JSON.parse(localStorage.getItem('escape.mom.paris.v6.1.sfx')||'{}');
     function showRoom(id){ rooms.forEach(r=>document.getElementById(r).classList.remove('active')); document.getElementById(id).classList.add('active'); const idx=rooms.indexOf(id); bar.style.width=((idx+1)/rooms.length*100)+'%'; state.room=id; saveState(); }
-    function saveState(){ localStorage.setItem('escape.mom.paris.v6.0', JSON.stringify(state)); }
-    function reset(){ localStorage.removeItem('escape.mom.paris.v6.0'); location.reload(); }
-    document.getElementById('reset').addEventListener('click', reset);
+    function saveState(){ localStorage.setItem('escape.mom.paris.v6.1.sfx', JSON.stringify(state)); }
+    function reset(){ localStorage.removeItem('escape.mom.paris.v6.1.sfx'); location.reload(); }
+    document.getElementById('reset').addEventListener('click', ()=>{ SFX.ui(); reset(); });
+    document.getElementById('sfxToggle').addEventListener('click', ()=>{ SFX.ui(); const on = /Sound on/.test(document.getElementById('sfxToggle').textContent); SFX.toggle(!on); });
 
     // Utils
     const rect = el => el.getBoundingClientRect();
@@ -447,11 +489,11 @@
       const seqEl = document.getElementById('seq'); const slots = new Array(8);
       for(let i=0;i<8;i++){
         const s=document.createElement('div'); s.className='seq-slot'; s.dataset.index=String(i);
-        s.onclick=()=>onSlotClick(i);
-        s.oncontextmenu=(e)=>{e.preventDefault(); clearSlot(i)};
+        s.onclick=()=>{ SFX.ui(); onSlotClick(i); };
+        s.oncontextmenu=(e)=>{ e.preventDefault(); clearSlot(i); SFX.pop(); };
         s.addEventListener('dragover', e=>{ e.preventDefault(); s.classList.add('active'); });
         s.addEventListener('dragleave', ()=> s.classList.remove('active'));
-        s.addEventListener('drop', e=>{ e.preventDefault(); s.classList.remove('active'); const dir = e.dataTransfer.getData('text/dir'); const from = e.dataTransfer.getData('text/from'); const src = parseInt(e.dataTransfer.getData('text/src')||'-1',10); if(!dir) return; if(from==='palette'){ placeFromPalette(i, dir); } else if(from==='slot' && src>=0){ if(src===i) return; const a=getSlot(src), b=getSlot(i); clearSlot(src); clearSlot(i); if(b) setSlot(src,b); if(a) setSlot(i,a); } });
+        s.addEventListener('drop', e=>{ e.preventDefault(); s.classList.remove('active'); const dir = e.dataTransfer.getData('text/dir'); const from = e.dataTransfer.getData('text/from'); const src = parseInt(e.dataTransfer.getData('text/src')||'-1',10); if(!dir) return; if(from==='palette'){ placeFromPalette(i, dir); } else if(from==='slot' && src>=0){ if(src===i) return; const a=getSlot(src), b=getSlot(i); clearSlot(src); clearSlot(i); if(b) setSlot(src,b); if(a) setSlot(i,a); SFX.snap(); } });
         seqEl.appendChild(s); slots[i]=s;
       }
       function arrow(d){ return d==='U'? '\u2191' : d==='R'? '\u2192' : d==='D'? '\u2193' : '\u2190'; }
@@ -459,24 +501,24 @@
       function guard(i){ return Number.isInteger(i) && i>=0 && i<slots.length && !!slots[i]; }
       function isEmpty(i){ return guard(i) && !slots[i].querySelector('.token'); }
       function token(dir, index){ const t=document.createElement('div'); t.className='token'; t.textContent=arrow(dir); t.dataset.dir=dir; t.draggable=true; t.title=label(dir)+" — drag to another slot or right‑click to clear"; t.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/dir', dir); e.dataTransfer.setData('text/from','slot'); e.dataTransfer.setData('text/src', String(index)); e.dataTransfer.effectAllowed='move'; setDragImage(e, t); }); return t; }
-      function setSlot(i, dir){ if(!guard(i) || !dir) return; slots[i].innerHTML=''; slots[i].appendChild(token(dir, i)); slots[i].classList.add('filled'); }
+      function setSlot(i, dir){ if(!guard(i) || !dir) return; slots[i].innerHTML=''; slots[i].appendChild(token(dir, i)); slots[i].classList.add('filled'); SFX.snap(); }
       function getSlot(i){ if(!guard(i)) return ''; const t=slots[i].querySelector('.token'); return t? t.dataset.dir : ''; }
-      function clearSlot(i){ if(!guard(i)) return; slots[i].innerHTML=''; slots[i].classList.remove('filled'); if(selected===i) slots[i].classList.remove('active'); if(swapIndex===i) swapIndex=-1; }
+      function clearSlot(i){ if(!guard(i)) return; slots[i].innerHTML=''; slots[i].classList.remove('filled'); }
       let selected=-1, swapIndex=-1;
       function select(i){ if(guard(selected)) slots[selected].classList.remove('active'); selected = guard(i)? i : -1; if(guard(selected)) slots[selected].classList.add('active'); }
       function onSlotClick(i){ if(!guard(i)) return; if(swapIndex===-1){ swapIndex=i; select(i); } else if(swapIndex===i){ swapIndex=-1; select(-1); } else { const a=getSlot(swapIndex), b=getSlot(i); clearSlot(swapIndex); clearSlot(i); if(b) setSlot(swapIndex,b); if(a) setSlot(i,a); swapIndex=-1; select(-1);} }
       const palette=document.getElementById('palette1');
-      palette.querySelectorAll('[data-dir]').forEach(btn=>{ const dir=btn.dataset.dir; btn.addEventListener('click', ()=>{ clickAdd(dir); }); btn.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/dir', dir); e.dataTransfer.setData('text/from','palette'); e.dataTransfer.effectAllowed='copy'; setDragImage(e, btn); }); });
-      document.getElementById('erase').onclick=()=>{ if(guard(selected)) clearSlot(selected); };
+      palette.querySelectorAll('[data-dir]').forEach(btn=>{ const dir=btn.dataset.dir; btn.addEventListener('click', ()=>{ clickAdd(dir); SFX.ui(); }); btn.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/dir', dir); e.dataTransfer.setData('text/from','palette'); e.dataTransfer.effectAllowed='copy'; setDragImage(e, btn); }); });
+      document.getElementById('erase').onclick=()=>{ if(guard(selected)) { clearSlot(selected); SFX.pop(); } };
       function nextEmpty(){ for(let i=0;i<slots.length;i++){ if(!getSlot(i)) return i; } return -1; }
       function setDragImage(e, el){ try{ const g=el.cloneNode(true); g.style.position='absolute'; g.style.top='-9999px'; g.style.left='-9999px'; document.body.appendChild(g); e.dataTransfer.setDragImage(g, g.offsetWidth/2, g.offsetHeight/2); setTimeout(()=>g.remove(),0);}catch(_){} }
-      function placeFromPalette(targetIndex, dir){ if(!guard(targetIndex)) return; if(isEmpty(targetIndex)) { setSlot(targetIndex, dir); select(targetIndex); return; } const j = nextEmpty(); if(guard(j)) { setSlot(j, dir); select(j); } else { setMsg('msg1','All 8 slots are filled — remove or swap to change.','error'); } }
-      function clickAdd(dir){ const idx = guard(selected)? selected : nextEmpty(); if(!guard(idx)) { setMsg('msg1','All 8 slots are filled — remove or swap to change.','error'); return; } if(isEmpty(idx)) setSlot(idx,dir); else placeFromPalette(idx,dir); }
+      function placeFromPalette(targetIndex, dir){ if(!guard(targetIndex)) return; if(isEmpty(targetIndex)) { setSlot(targetIndex, dir); select(targetIndex); return; } const j = nextEmpty(); if(guard(j)) { setSlot(j, dir); select(j); } else { setMsg('msg1','All 8 slots are filled — remove or swap to change.','error'); SFX.wall(); } }
+      function clickAdd(dir){ const idx = guard(selected)? selected : nextEmpty(); if(!guard(idx)) { setMsg('msg1','All 8 slots are filled — remove or swap to change.','error'); SFX.wall(); return; } if(isEmpty(idx)) setSlot(idx,dir); else placeFromPalette(idx,dir); }
       function simulate(seq){ let r=startRC[0], c=startRC[1]; for(const mv of seq){ if(mv==='U') r--; else if(mv==='D') r++; else if(mv==='L') c--; else if(mv==='R') c++; if(r<0||c<0||r>=rows||c>=cols) return {ok:false, reason:'wall'}; if(cats.has(`${r},${c}`)) return {ok:false, reason:'cat'}; } return {ok:(r===goalRC[0]&&c===goalRC[1]), reason:(r===goalRC[0]&&c===goalRC[1]?'ok':'miss')}; }
-      function animate(seq){ let r=startRC[0], c=startRC[1], i=0; placeMouse(r,c); const step=()=>{ if(i>=seq.length){ if(r===goalRC[0]&&c===goalRC[1]){ setMsg('msg1','Cheese secured!','success'); setTimeout(()=>showRoom('room2'), 700); confetti(); } else setMsg('msg1','Didn’t reach the cheese. Tweak the plan.','error'); return; } const mv=seq[i++]; if(mv==='U') r--; else if(mv==='D') r++; else if(mv==='L') c--; else if(mv==='R') c++; if(r<0||c<0||r>=rows||c>=cols){ setMsg('msg1','Ouch! Hit the wall.','error'); return; } if(cats.has(`${r},${c}`)){ setMsg('msg1','Cat spotted! Try another route.','error'); return; } placeMouse(r,c); setTimeout(step, 230); }; step(); }
-      document.getElementById('run1').onclick=()=>{ const seq=[...Array(8)].map((_,i)=>getSlot(i)); if(seq.some(s=>!s)){ setMsg('msg1','Fill all 8 slots.','error'); return; } const res=simulate(seq); if(res.ok) setMsg('msg1','Looks good — running…',''); else if(res.reason==='wall') setMsg('msg1','That plan hits a wall.','error'); else if(res.reason==='cat') setMsg('msg1','That plan meets a cat.','error'); animate(seq); };
-      document.getElementById('clear1').onclick=()=>{ for(let i=0;i<8;i++) clearSlot(i); select(-1); placeMouse(...startRC); setMsg('msg1','', ''); };
-      document.getElementById('hint1').onclick=()=> setMsg('msg1','Mostly ↑ and →. Some straight lines are blocked by cats.','');
+      function animate(seq){ let r=startRC[0], c=startRC[1], i=0; placeMouse(r,c); const step=()=>{ if(i>=seq.length){ if(r===goalRC[0]&&c===goalRC[1]){ setMsg('msg1','Cheese secured!','success'); SFX.success(); setTimeout(()=>showRoom('room2'), 700); } else { setMsg('msg1','Didn’t reach the cheese. Tweak the plan.','error'); } return; } const mv=seq[i++]; if(mv==='U') r--; else if(mv==='D') r++; else if(mv==='L') c--; else if(mv==='R') c++; if(r<0||c<0||r>=rows||c>=cols){ setMsg('msg1','Ouch! Hit the wall.','error'); SFX.wall(); return; } if(cats.has(`${r},${c}`)){ setMsg('msg1','Cat spotted! Try another route.','error'); SFX.cat(); return; } placeMouse(r,c); SFX.step(); setTimeout(step, 230); }; step(); }
+      document.getElementById('run1').onclick=()=>{ SFX.ui(); const seq=[...Array(8)].map((_,i)=>getSlot(i)); if(seq.some(s=>!s)){ setMsg('msg1','Fill all 8 slots.','error'); SFX.wall(); return; } const res=simulate(seq); if(res.ok) setMsg('msg1','Looks good — running…',''); else if(res.reason==='wall') setMsg('msg1','That plan hits a wall.','error'); else if(res.reason==='cat') setMsg('msg1','That plan meets a cat.','error'); animate(seq); };
+      document.getElementById('clear1').onclick=()=>{ for(let i=0;i<8;i++) clearSlot(i); select(-1); placeMouse(...startRC); setMsg('msg1','', ''); SFX.pop(); };
+      document.getElementById('hint1').onclick=()=> { setMsg('msg1','Mostly ↑ and →. Some straight lines are blocked by cats.',''); SFX.ui(); };
       window.__mazeSim = simulate;
     }
 
@@ -487,11 +529,15 @@
       const tokens = [...area.querySelectorAll('.cork[data-kind="cork"]')];
       const occ = {A:null, B:null, C:null};
       function centerIn(el, s){ const sb = rect(s); const ab = rect(area); const cx = sb.left + sb.width/2 - ab.left; const cy = sb.top + sb.height/2 - ab.top; el.style.left = (cx - el.offsetWidth/2) + 'px'; el.style.top  = (cy - el.offsetHeight/2) + 'px'; }
-      tokens.forEach(t=>{ t.dataset.homeLeft = (parseInt(t.style.left)||0); t.dataset.homeTop  = (parseInt(t.style.top)||0); t.style.touchAction = 'none'; let sx=0, sy=0, ox=0, oy=0, dragging=false; t.addEventListener('pointerdown', e=>{dragging=true; t.setPointerCapture(e.pointerId); sx=e.clientX; sy=e.clientY; ox=parseFloat(t.style.left)||0; oy=parseFloat(t.style.top)||0; t.style.zIndex=10; }); t.addEventListener('pointermove', e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; t.style.left=(ox+dx)+'px'; t.style.top=(oy+dy)+'px'; }); t.addEventListener('pointerup', e=>{ if(!dragging) return; dragging=false; t.style.zIndex=''; let hit=null; const b=rect(t); for(const s of slots){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } if(t.dataset.slot){ const prev = t.dataset.slot; if(occ[prev]===t) occ[prev]=null; } if(hit){ const key = hit.dataset.accept; if(occ[key] && occ[key]!==t){ const other = occ[key]; other.dataset.slot=''; other.style.left=other.dataset.homeLeft+'px'; other.style.top=other.dataset.homeTop+'px'; } occ[key]=t; t.dataset.slot=key; centerIn(t,hit); hit.classList.add('filled'); hit.dataset.val=t.dataset.val; check(); } else { t.dataset.slot=''; t.style.left=t.dataset.homeLeft+'px'; t.style.top=t.dataset.homeTop+'px'; check(); } }); });
+      tokens.forEach(t=>{ t.dataset.homeLeft = (parseInt(t.style.left)||0); t.dataset.homeTop  = (parseInt(t.style.top)||0); t.style.touchAction = 'none'; let sx=0, sy=0, ox=0, oy=0, dragging=false; t.addEventListener('pointerdown', e=>{dragging=true; t.setPointerCapture(e.pointerId); sx=e.clientX; sy=e.clientY; ox=parseFloat(t.style.left)||0; oy=parseFloat(t.style.top)||0; t.style.zIndex=10; SFX.ui(); }); t.addEventListener('pointermove', e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; t.style.left=(ox+dx)+'px'; t.style.top=(oy+dy)+'px'; }); t.addEventListener('pointerup', e=>{ if(!dragging) return; dragging=false; t.style.zIndex=''; let hit=null; const b=rect(t); for(const s of slots){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } if(t.dataset.slot){ const prev = t.dataset.slot; if(occ[prev]===t) occ[prev]=null; }
+        if(hit){ const key = hit.dataset.accept; if(occ[key] && occ[key]!==t){ const other = occ[key]; other.dataset.slot=''; other.style.left=other.dataset.homeLeft+'px'; other.style.top=other.dataset.homeTop+'px'; }
+          occ[key]=t; t.dataset.slot=key; centerIn(t,hit); hit.classList.add('filled'); hit.dataset.val=t.dataset.val; SFX.snap(); check();
+        } else { t.dataset.slot=''; t.style.left=t.dataset.homeLeft+'px'; t.style.top=t.dataset.homeTop+'px'; SFX.pop(); check(); }
+      }); });
       function val(ch){ return (area.querySelector('.drop[data-accept="'+ch+'"]').dataset.val)||''; }
       function constraintsOK(){ const A=+val('A'), B=+val('B'), C=+val('C'); return (!!A&&!!B&&!!C) && (A+B===10) && (B<C) && (C-A===3); }
-      function check(){ const ok = constraintsOK(); slots.forEach(s=>{ s.classList.remove('valid','invalid'); if(val(s.dataset.accept)){ s.classList.add(ok? 'valid':'invalid'); } }); const m=document.getElementById('msg2'); if(ok){ m.textContent='*pop* — the cork turns and the cabinet opens!'; m.className='hint success'; setTimeout(()=>showRoom('room3'),700);} else { m.textContent='Place numbers so all three clues are true.'; m.className='hint'; } }
-      document.getElementById('hint2').onclick=()=>{ const m=document.getElementById('msg2'); m.textContent='Try pairs that add to 10 for A+B, then choose C so that C−A=3 and B<C.'; m.className='hint'; };
+      function check(){ const ok = constraintsOK(); slots.forEach(s=>{ s.classList.remove('valid','invalid'); if(val(s.dataset.accept)){ s.classList.add(ok? 'valid':'invalid'); } }); const m=document.getElementById('msg2'); if(ok){ m.textContent='*pop* — the cork turns and the cabinet opens!'; m.className='hint success'; SFX.unlock(); setTimeout(()=>showRoom('room3'),700);} else { m.textContent='Place numbers so all three clues are true.'; m.className='hint'; } }
+      document.getElementById('hint2').onclick=()=>{ const m=document.getElementById('msg2'); m.textContent='Try pairs that add to 10 for A+B, then choose C so that C−A=3 and B<C.'; m.className='hint'; SFX.ui(); };
     }
 
     // ===================== ROOM 3 =====================
@@ -508,18 +554,18 @@
       function spreadTokens(){ const pb = rect(palette), ab = rect(area); const tokenW = 116; const padX = 24; const left = pb.left - ab.left + padX; const right = pb.right - ab.left - padX; const usable = Math.max(0, right - left - tokenW); const y = pb.top - ab.top + Math.max(12, (pb.height - tokenW)/2); for(let i=0;i<tokens.length;i++){ const x = left + (tokens.length===1 ? usable/2 : (usable/(tokens.length-1))*i); tokens[i].style.left = x + 'px'; tokens[i].style.top  = y + 'px'; tokens[i].dataset.homeLeft = tokens[i].style.left; tokens[i].dataset.homeTop  = tokens[i].style.top; } }
       window.addEventListener('resize', spreadTokens); requestAnimationFrame(spreadTokens);
 
-      function makeToken(val, face){ const t=document.createElement('div'); t.className='rtoken'; t.dataset.val=val; t.innerHTML='<div class="big">'+face.replaceAll('\n','<br/>')+'</div><div>'+val.toUpperCase()+'</div>'; t.style.left='12px'; t.style.top='12px'; t.style.zIndex=''; t.style.touchAction='none'; let sx=0, sy=0, ox=0, oy=0, dragging=false, hover=null; t.addEventListener('pointerdown', e=>{ dragging=true; t.setPointerCapture(e.pointerId); sx=e.clientX; sy=e.clientY; ox=parseFloat(t.style.left)||0; oy=parseFloat(t.style.top)||0; t.style.zIndex=20; }); t.addEventListener('pointermove', e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; t.style.left=(ox+dx)+'px'; t.style.top=(oy+dy)+'px'; const b=rect(t); let hit=null; for(const s of slotEls){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } if(hover && hover!==hit) hover.classList.remove('hover'); if(hit) hit.classList.add('hover'); hover = hit; }); t.addEventListener('pointerup', e=>{ if(!dragging) return; dragging=false; t.style.zIndex=''; const b=rect(t); let hit=null; for(const s of slotEls){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } slotEls.forEach(s=>s.classList.remove('hover')); for(const k in occ){ if(occ[k]===t){ delete occ[k]; const old = area.querySelector('.rslot[data-key="'+k+'"]'); if(old){ old.classList.remove('filled'); old.textContent='Drop answer here'; } } } if(hit){ const key=hit.dataset.key; if(occ[key] && occ[key]!==t){ const other=occ[key]; other.style.left=other.dataset.homeLeft; other.style.top=other.dataset.homeTop; } occ[key]=t; centerIn(t, hit); hit.classList.add('filled'); hit.textContent=t.dataset.val.toUpperCase(); check(); } else { t.style.left=t.dataset.homeLeft; t.style.top=t.dataset.homeTop; check(); } }); return t; }
+      function makeToken(val, face){ const t=document.createElement('div'); t.className='rtoken'; t.dataset.val=val; t.innerHTML='<div class="big">'+face.replaceAll('\n','<br/>')+'</div><div>'+val.toUpperCase()+'</div>'; t.style.left='12px'; t.style.top='12px'; t.style.zIndex=''; t.style.touchAction='none'; let sx=0, sy=0, ox=0, oy=0, dragging=false, hover=null; t.addEventListener('pointerdown', e=>{ dragging=true; t.setPointerCapture(e.pointerId); sx=e.clientX; sy=e.clientY; ox=parseFloat(t.style.left)||0; oy=parseFloat(t.style.top)||0; t.style.zIndex=20; SFX.ui(); }); t.addEventListener('pointermove', e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; t.style.left=(ox+dx)+'px'; t.style.top=(oy+dy)+'px'; const b=rect(t); let hit=null; for(const s of slotEls){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } if(hover && hover!==hit) hover.classList.remove('hover'); if(hit) hit.classList.add('hover'); hover = hit; }); t.addEventListener('pointerup', e=>{ if(!dragging) return; dragging=false; t.style.zIndex=''; const b=rect(t); let hit=null; for(const s of slotEls){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } slotEls.forEach(s=>s.classList.remove('hover')); for(const k in occ){ if(occ[k]===t){ delete occ[k]; const old = area.querySelector('.rslot[data-key="'+k+'"]'); if(old){ old.classList.remove('filled'); old.textContent='Drop answer here'; } } } if(hit){ const key=hit.dataset.key; if(occ[key] && occ[key]!==t){ const other=occ[key]; other.style.left=other.dataset.homeLeft; other.style.top=other.dataset.homeTop; } occ[key]=t; centerIn(t, hit); hit.classList.add('filled'); hit.textContent=t.dataset.val.toUpperCase(); SFX.snap(); check(); } else { t.style.left=t.dataset.homeLeft; t.style.top=t.dataset.homeTop; SFX.pop(); check(); } }); return t; }
       function centerIn(el, s){ const sb = rect(s); const ab = rect(area); const cx = sb.left + sb.width/2 - ab.left; const cy = sb.top + sb.height/2 - ab.top; el.style.left = (cx - el.offsetWidth/2) + 'px'; el.style.top  = (cy - el.offsetHeight/2) + 'px'; }
       function solved(){ return Object.keys(need).every(k=> occ[k] && occ[k].dataset.val===need[k]); }
-      function check(){ if(solved()){ setMsg('msg3','All clues solved — the last door opens!','success'); setTimeout(()=> showFinale(), 720); } else { setMsg('msg3','Match each riddle to its answer.',''); } }
-      document.getElementById('hint3').onclick=()=> setMsg('msg3','Think: river-side bookstalls, a glass pyramid guarding a famous smile, and underground trains marked by a bold red sign.','');
+      function check(){ if(solved()){ setMsg('msg3','All clues solved — the last door opens!','success'); SFX.success(); setTimeout(()=> showFinale(), 720); } else { setMsg('msg3','Match each riddle to its answer.',''); } }
+      document.getElementById('hint3').onclick=()=> { setMsg('msg3','Think: river-side bookstalls, a glass pyramid guarding a famous smile, and underground trains marked by a bold red sign.',''); SFX.ui(); };
       window.__riddleHooks = { checkSolved: (map)=> Object.keys(need).every(k=> map[k]===need[k]) };
     }
 
     // ===================== FINALE =====================
     const finale = document.getElementById('finale');
-    document.getElementById('closeFinale')?.addEventListener('click', ()=> finale.style.display='none');
-    function showFinale(){ finale.style.display='grid'; confetti(); }
+    document.getElementById('closeFinale')?.addEventListener('click', ()=> { finale.style.display='none'; SFX.ui(); });
+    function showFinale(){ finale.style.display='grid'; SFX.fanfare(); confetti(); }
 
     // Lightweight confetti
     function confetti(){ const box=document.getElementById('confetti'); if(!box) return; box.innerHTML=''; const n=120; for(let i=0;i<n;i++){ const s=document.createElement('div'); const size=4+Math.random()*6; s.style.position='absolute'; s.style.left=(10+Math.random()*80)+'%'; s.style.top='-20px'; s.style.width=size+'px'; s.style.height=size+'px'; s.style.background=['#22d3ee','#60a5fa','#f59e0b','#10b981','#e879f9'][i%5]; s.style.opacity='.9'; s.style.transform='rotate('+ (Math.random()*360)+'deg)'; s.style.filter='drop-shadow(0 2px 2px rgba(0,0,0,.2))'; box.appendChild(s); const dur=4+Math.random()*2; s.animate([{transform:s.style.transform, top:'-20px'}, {transform:'rotate('+(360+Math.random()*720)+'deg)', top:'110%'}], {duration: dur*1000, easing:'cubic-bezier(.3,.7,.4,1)', iterations:1, fill:'forwards'}); } setTimeout(()=>{ box.innerHTML=''; }, 7000); }
