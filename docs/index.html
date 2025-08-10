@@ -300,9 +300,9 @@
     <!-- ===================== FINALE ===================== -->
     <div class="finale" id="finale"
       style="position:fixed; inset:0; display:none; place-items:center; background:rgba(5,10,20,.92); z-index:50; backdrop-filter:blur(6px); overflow:hidden">
-      <canvas id="parisCanvas" style="position:absolute; inset:0; z-index:-1"></canvas>
+      <canvas id="parisCanvas" style="position:absolute; inset:0; z-index:0"></canvas>
       <div class="box"
-        style="background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
+        style="position:relative; z-index:1; background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
         <div class="poster"
           style="display:grid; place-items:center; margin:10px 0">
           <!-- Eiffel Tower SVG with lattice + sparkles + beret character -->
@@ -600,7 +600,7 @@
         'https://upload.wikimedia.org/wikipedia/commons/a/a6/Paris_ND_de_Paris.jpg',
         'https://upload.wikimedia.org/wikipedia/commons/8/8d/Louvre_Museum_Wikimedia_Commons.jpg'
       ];
-      const imgs=urls.map(u=>{ const img=new Image(); img.src=u; return img; });
+      const imgs=urls.map(u=>{ const img=new Image(); img.crossOrigin='anonymous'; img.src=u; return img; });
       const sprites=[...Array(8)].map(()=>({img:imgs[Math.floor(Math.random()*imgs.length)], x:0, y:0, w:160, h:100, speed:0.3+Math.random()*0.2}));
       function reset(s){ s.img=imgs[Math.floor(Math.random()*imgs.length)]; s.x=Math.random()*(c.width-s.w); s.y=c.height+Math.random()*c.height; }
       sprites.forEach(reset);
