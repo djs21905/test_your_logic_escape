@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mom's Escape Room • A Little Surprise</title>
+  <meta name="description" content="Drag‑and‑drop escape room for GitHub Pages. Finale reveals a Paris trip." />
+  <style>
+    /* ===================== THEME ===================== */
+    :root{
+      --bg:#0a0f19; --bg2:#0b1220; --panel:#0e1626; --text:#e6edf3; --muted:#9ba3af;
+      --accA:#60a5fa; --accB:#22d3ee; --ok:#10b981; --warn:#ef4444; --gold:#f59e0b; --wall:#f43f5e;
+      --ink:#0b1220; --border:#223049; --chip:#131c2b; --elev:0 12px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; background:radial-gradient(1200px 800px at 20% -20%, #152036 0%, transparent 60%), linear-gradient(180deg,var(--bg),var(--bg2)); color:var(--text); font:16px/1.5 Inter,system-ui,Segoe UI,Roboto,Arial; user-select:none}
+    .wrap{max-width:1180px; margin:auto; padding:24px}
+    header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px}
+    h1{font-size:clamp(22px,4vw,36px); margin:0; letter-spacing:.3px; background:linear-gradient(90deg,var(--accA),var(--accB)); -webkit-background-clip:text; background-clip:text; color:transparent}
+    .small{font-size:13px; color:var(--muted)}
+
+    /* Progress */
+    .progress{height:12px; background:#0d1626; border-radius:999px; overflow:hidden; margin:14px 0 22px; box-shadow:inset 0 0 0 1px #243045}
+    .bar{height:100%; width:0%; background:linear-gradient(90deg,var(--accB),var(--ok)); transition:width .4s ease}
+
+    /* Cards */
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid var(--border); border-radius:22px; padding:18px; box-shadow:var(--elev)}
+    .room{display:none}
+    .room.active{display:block; animation:fade .35s ease both}
+    @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+    button{background:linear-gradient(180deg,var(--accA),#3b82f6); color:white; border:0; border-radius:12px; padding:10px 14px; font:600 14px/1 Inter,system-ui; cursor:pointer; box-shadow:0 6px 14px rgba(59,130,246,.25)}
+    button.ghost{background:transparent; border:1px solid #2a3240; color:var(--text); box-shadow:none}
+    .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px}
+
+    .hint{color:var(--muted); margin-top:10px}
+    .hint.success{color:var(--ok)}
+    .hint.error{color:var(--warn)}
+
+    /* ===================== ROOM 1 ===================== */
+    #maze{position:relative}
+    #board{position:absolute; left:0; top:0; border:8px solid var(--wall); border-radius:16px; box-shadow:inset 0 0 0 2px rgba(0,0,0,.5), 0 0 22px rgba(244,63,94,.25)}
+    #cells{position:absolute; left:0; top:0}
+    #cells>.cell{position:absolute; --c1:#0f1a2c; --c2:#0b1526; background:radial-gradient(60px 60px at 30% 30%, rgba(255,255,255,.04), transparent 40%), linear-gradient(135deg,var(--c1),var(--c2)); border:1px solid rgba(255,255,255,0.05)}
+    #cells>.cell.alt{--c1:#0c182a; --c2:#0a1525}
+    #mouse,[data-cell],#goal{position:absolute}
+    #mouse{box-shadow:0 0 0 3px #22c55e, 0 8px 16px rgba(34,197,94,.25); border-radius:12px}
+    #goal{box-shadow:0 0 0 3px var(--gold), 0 8px 16px rgba(245,158,11,.25); border-radius:12px}
+    .obstacle{width:50px; height:50px; border-radius:50%; background:radial-gradient(circle at 30% 30%, rgba(244,63,94,.35), rgba(244,63,94,.15)); border:2px solid rgba(244,63,94,.6); display:grid; place-items:center}
+
+    .seq{display:grid; grid-template-columns:repeat(8,66px); gap:10px}
+    .seq-slot{width:66px; height:66px; border-radius:14px; border:2px dashed #31405a; display:grid; place-items:center; position:relative; background:#0d1626}
+    .seq-slot.active{box-shadow:0 0 0 3px rgba(96,165,250,.35)}
+    .seq-slot.filled{border-color:#2dd4bf}
+    .token{width:52px; height:52px; display:grid; place-items:center; border-radius:12px; background:linear-gradient(180deg,#17243a,#121c2e); border:1px solid #2a3240; font-size:24px; font-weight:800; user-select:none; box-shadow:0 6px 14px rgba(0,0,0,.35)}
+
+    /* ===================== ROOM 2 ===================== */
+    #wineArea{position:relative; height:380px}
+    #wineSVG{position:absolute; left:20px; top:0; width:560px; height:360px}
+    .drop{position:absolute; width:92px; height:92px; border-radius:50%; border:2px dashed #3b4a63; display:grid; place-items:center; color:#9ba3af; font-weight:800; letter-spacing:.5px; background:rgba(2,6,14,.35); backdrop-filter:blur(2px); box-shadow:inset 0 0 0 2px rgba(0,0,0,.2)}
+    .drop.filled{border-color:#2dd4bf; color:#e6edf3; box-shadow:0 0 14px rgba(45,212,191,.25), inset 0 0 0 2px rgba(0,0,0,.2)}
+    .drop.valid{outline:3px solid rgba(16,185,129,.55)}
+    .drop.invalid{outline:3px solid rgba(239,68,68,.55)}
+    .cork{position:absolute; width:86px; height:86px; border-radius:50%; background:conic-gradient(from 0deg, #ab7d4e, #caa574, #845a32, #ab7d4e); border:2px solid #5e3b1e; color:#2b1a0d; display:grid; place-items:center; font-weight:900; font-size:26px; touch-action:none; box-shadow:0 10px 18px rgba(0,0,0,.35)}
+    .cork:after{content:''; position:absolute; inset:10px; border-radius:50%; border:1px solid rgba(0,0,0,.35)}
+
+    /* ===================== ROOM 3 ===================== */
+    #riddleArea{position:relative; min-height:560px; display:grid; grid-template-columns:1fr; gap:16px}
+    .riddle-row{display:grid; grid-template-columns:repeat(3, 1fr); gap:14px}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0)); border:1px solid var(--border); border-radius:18px; padding:12px; display:grid; gap:8px}
+    .art{height:170px; border-radius:14px; background:radial-gradient(140px 80px at 50% 20%, rgba(96,165,250,.12), transparent 55%), #0f1728; display:grid; place-items:center; border:1px solid #23314a}
+    .art svg{width:128px; height:128px}
+    .rslot{height:74px; border:2px dashed #334257; border-radius:12px; display:grid; place-items:center; color:#9ba3af}
+    .rslot.filled{border-color:#2dd4bf; color:#e6edf3; box-shadow:0 0 12px rgba(45,212,191,.25)}
+    .rslot.hover{outline:3px solid rgba(96,165,250,.4)}
+    .palette{position:relative; height:160px; border:1px dashed #2a3240; border-radius:12px; display:flex; align-items:center; gap:12px; padding:12px 16px; overflow:hidden; background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+    .palette .hintline{position:absolute; left:16px; top:8px; font-size:12px; color:#9ba3af}
+    .rtoken{position:absolute; width:116px; height:116px; border-radius:16px; display:grid; place-items:center; font-weight:800; font-size:18px; border:1px solid #2a3240; background:linear-gradient(180deg,#17243a,#0f1a2c); box-shadow:0 10px 18px rgba(0,0,0,.38); touch-action:none; text-align:center; padding:6px}
+    .rtoken .big{font-size:30px; line-height:1}
+
+    @media (max-width: 980px){ .riddle-row{grid-template-columns:1fr} #riddleArea{min-height:740px} }
+
+    /* Motion preferences */
+    @media (prefers-reduced-motion: reduce){ .room.active{animation:none} .wave{animation:none !important} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Mom’s Escape Room</h1>
+      <div class="small">A little adventure…</div>
+    </header>
+    <div class="progress"><div id="bar" class="bar"></div></div>
+
+    <!-- ===================== ROOM 1 ===================== -->
+    <section id="room1" class="room card active" aria-labelledby="r1h">
+      <h2 id="r1h">Room 1 – Mousetrap</h2>
+      <p class="small">Thick <b style="color:var(--wall)">red frame</b> = <b>walls</b>. Dark tiles are the <b>floor</b>. Cats are red circles. Mouse (green ring) must reach cheese (gold ring).</p>
+      <div style="display:grid; grid-template-columns: 460px 1fr; gap:16px; align-items:start">
+        <div class="grid" id="maze">
+          <div id="board" aria-hidden="true"></div>
+          <div id="cells" aria-hidden="true"></div>
+          <div id="mouse" class="token" aria-label="mouse">🐭</div>
+          <div id="goal" class="token" aria-label="cheese">🧀</div>
+          <div class="token" data-cell="0,3" aria-hidden="true">🐈</div>
+          <div class="token" data-cell="2,1" aria-hidden="true">🐈</div>
+          <div class="token" data-cell="4,1" aria-hidden="true">🐈</div>
+        </div>
+        <div>
+          <div class="small" style="margin-bottom:6px">Palette</div>
+          <div id="palette1" style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px">
+            <div class="token" draggable="true" data-dir="U" title="Up">↑</div>
+            <div class="token" draggable="true" data-dir="R" title="Right">→</div>
+            <div class="token" draggable="true" data-dir="D" title="Down">↓</div>
+            <div class="token" draggable="true" data-dir="L" title="Left">←</div>
+            <button class="token" id="erase" title="Clear selected">⌫</button>
+          </div>
+          <div class="small">Command slots (8 steps)</div>
+          <div id="seq" class="seq" aria-label="Command sequence"></div>
+          <div class="actions">
+            <button id="run1">Run</button>
+            <button class="ghost" id="clear1">Clear</button>
+            <button class="ghost" id="hint1">Hint</button>
+          </div>
+          <div id="msg1" class="hint" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ROOM 2 ===================== -->
+    <section id="room2" class="room card" aria-labelledby="r2h">
+      <h2 id="r2h">Room 2 – The Sommelier’s Lock</h2>
+      <p class="small">Drag corks into the glasses A, B, C. When all clues glow green, you advance.</p>
+      <ul class="small" style="margin-top:-6px">
+        <li><b>A + B = 10</b></li>
+        <li><b>B &lt; C</b></li>
+        <li><b>C − A = 3</b></li>
+      </ul>
+      <div class="grid" id="wineArea">
+        <svg id="wineSVG" viewBox="0 0 560 360" aria-hidden="true">
+          <defs>
+            <linearGradient id="glassFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c7d2fe" stop-opacity="0.5"/>
+              <stop offset="100%" stop-color="#93c5fd" stop-opacity="0.25"/>
+            </linearGradient>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="b"/>
+              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- Table -->
+          <rect x="20" y="300" width="520" height="20" fill="#2b3345" stroke="#1f2635"/>
+          <!-- Three glasses -->
+          <g fill="url(#glassFill)" stroke="#60a5fa" stroke-width="2.2">
+            <g transform="translate(60,30)">
+              <path d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z"/>
+            </g>
+            <g transform="translate(210,10)">
+              <path d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z"/>
+            </g>
+            <g transform="translate(360,30)">
+              <path d="M0 20 h70 a14 14 0 0 1 14 14 c0 40 -44 58 -44 90 v100 h-30 v-100 c0 -32 -44 -50 -44 -90 a14 14 0 0 1 14 -14 z"/>
+            </g>
+          </g>
+          <!-- Letters & neon clue -->
+          <text x="95" y="275" text-anchor="middle" fill="#9ba3af" font-weight="800">A</text>
+          <text x="245" y="255" text-anchor="middle" fill="#9ba3af" font-weight="800">B</text>
+          <text x="395" y="275" text-anchor="middle" fill="#9ba3af" font-weight="800">C</text>
+          <text id="neon" x="280" y="340" text-anchor="middle" fill="#22d3ee" font-weight="800" filter="url(#glow)">A+B=10 • B&lt;C • C−A=3</text>
+        </svg>
+        <!-- Drop zones on the bowls -->
+        <div class="drop" data-accept="A" style="left:80px; top:145px">A</div>
+        <div class="drop" data-accept="B" style="left:230px; top:125px">B</div>
+        <div class="drop" data-accept="C" style="left:380px; top:145px">C</div>
+        <!-- Cork tokens -->
+        <div class="cork" data-kind="cork" data-val="3" style="left:620px; top:30px">3</div>
+        <div class="cork" data-kind="cork" data-val="4" style="left:620px; top:130px">4</div>
+        <div class="cork" data-kind="cork" data-val="5" style="left:620px; top:230px">5</div>
+        <div class="cork" data-kind="cork" data-val="6" style="left:720px; top:80px">6</div>
+        <div class="cork" data-kind="cork" data-val="7" style="left:720px; top:180px">7</div>
+      </div>
+      <div class="actions"><button class="ghost" id="hint2">Hint</button></div>
+      <div id="msg2" class="hint" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- ===================== ROOM 3 ===================== -->
+    <section id="room3" class="room card" aria-labelledby="r3h">
+      <h2 id="r3h">Room 3 – Picture Riddle (Hard Mode)</h2>
+      <p class="small">Drag the correct answers from the palette onto each card. When all three glow, the door opens.</p>
+      <div id="riddleArea" class="grid">
+        <div class="riddle-row">
+          <!-- Seine -->
+          <div class="panel" data-answer="seine">
+            <div class="art" aria-hidden="true">
+              <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10 105 Q50 95 70 105 T130 105" fill="none" stroke="#38bdf8" stroke-width="4"/>
+                <rect x="20" y="40" width="28" height="18" fill="#475569" stroke="#0f172a"/>
+                <line x1="24" y1="44" x2="44" y2="44" stroke="#94a3b8"/>
+                <rect x="92" y="48" width="28" height="18" fill="#475569" stroke="#0f172a"/>
+                <line x1="96" y1="52" x2="116" y2="52" stroke="#94a3b8"/>
+                <circle cx="70" cy="30" r="8" fill="#fde68a"/>
+              </svg>
+            </div>
+            <div class="small">“Where pages meet the water and bridges keep secrets.”</div>
+            <div class="rslot" data-key="s1">Drop answer here</div>
+          </div>
+          <!-- Louvre -->
+          <div class="panel" data-answer="louvre">
+            <div class="art" aria-hidden="true">
+              <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="70,20 20,110 120,110" fill="url(#gradL)" stroke="#94a3b8"/>
+                <defs>
+                  <linearGradient id="gradL" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#93c5fd" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.15"/>
+                  </linearGradient>
+                </defs>
+                <path d="M50 118 Q70 128 90 118" stroke="#f1f5f9" fill="none"/>
+              </svg>
+            </div>
+            <div class="small">“A smile behind glass keeps watch beneath a triangle of light.”</div>
+            <div class="rslot" data-key="s2">Drop answer here</div>
+          </div>
+          <!-- Métro -->
+          <div class="panel" data-answer="metro">
+            <div class="art" aria-hidden="true">
+              <svg viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+                <rect x="40" y="18" width="60" height="28" rx="6" fill="#ef4444" stroke="#7f1d1d"/>
+                <text x="70" y="38" text-anchor="middle" fill="#f8fafc" font-size="16" font-weight="800">M</text>
+                <line x1="20" y1="100" x2="120" y2="100" stroke="#64748b" stroke-width="6"/>
+                <line x1="30" y1="100" x2="50" y2="130" stroke="#94a3b8"/>
+                <line x1="110" y1="100" x2="90" y2="130" stroke="#94a3b8"/>
+              </svg>
+            </div>
+            <div class="small">“Red word, iron veins — the city moves beneath your feet.”</div>
+            <div class="rslot" data-key="s3">Drop answer here</div>
+          </div>
+        </div>
+        <div class="palette" id="riddlePalette"><div class="hintline">Drag answers from here</div></div>
+      </div>
+      <div class="actions"><button class="ghost" id="hint3">Hint</button></div>
+      <div id="msg3" class="hint" role="status" aria-live="polite"></div>
+    </section>
+
+    <footer class="small" style="margin-top:18px">You can move pieces anytime. <button class="ghost" id="reset">Reset game</button></footer>
+  </div>
+
+  <!-- ===================== FINALE ===================== -->
+  <div class="finale" id="finale" style="position:fixed; inset:0; display:none; place-items:center; background:rgba(5,10,20,.92); z-index:50; backdrop-filter:blur(6px)">
+    <div class="box" style="background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
+      <div class="poster" style="display:grid; place-items:center; margin:10px 0">
+        <!-- Eiffel Tower SVG with lattice + sparkles + beret character (from v5.2, kept) -->
+        <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trip to Paris">
+          <defs>
+            <linearGradient id="night" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#0e1a3a"/>
+              <stop offset="100%" stop-color="#090f1f"/>
+            </linearGradient>
+            <radialGradient id="moonGlow" cx="72%" cy="18%" r="30%">
+              <stop offset="0%" stop-color="#fde68a" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="#fde68a" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#cbd5e1"/>
+              <stop offset="100%" stop-color="#94a3b8"/>
+            </linearGradient>
+            <style><![CDATA[
+              .spark { opacity:.85; }
+              .wave { transform-origin: 600px 265px; animation: wave 1s ease-in-out infinite alternate; }
+              @keyframes wave { from{transform:rotate(0deg)} to{transform:rotate(18deg)} }
+            ]]></style>
+          </defs>
+          <rect x="0" y="0" width="760" height="420" fill="url(#night)"/>
+          <circle cx="580" cy="70" r="110" fill="url(#moonGlow)"/>
+          <g fill="#e5e7eb" class="spark">
+            <circle cx="80" cy="60" r="1.5"/><circle cx="180" cy="40" r="1.5"/>
+            <circle cx="260" cy="90" r="1.5"/><circle cx="340" cy="30" r="1.5"/>
+            <circle cx="420" cy="70" r="1.5"/><circle cx="500" cy="40" r="1.5"/>
+            <circle cx="640" cy="110" r="1.5"/>
+          </g>
+          <g transform="translate(240,40)" fill="none" stroke="url(#steel)" stroke-width="3">
+            <path d="M130 0 L95 90 L165 90 Z"/>
+            <path d="M95 90 L62 170 L198 170 L165 90 Z"/>
+            <path d="M62 170 L36 235 L224 235 L198 170 Z"/>
+            <path d="M36 235 L15 290 L245 290 L224 235 Z"/>
+            <path d="M15 290 L0 330 L260 330 L245 290 Z"/>
+            <path d="M130 90 L130 330"/>
+            <g stroke-width="2">
+              <line x1="62" y1="170" x2="198" y2="170"/>
+              <line x1="36" y1="235" x2="224" y2="235"/>
+              <line x1="15" y1="290" x2="245" y2="290"/>
+              <line x1="62" y1="170" x2="36" y2="235"/>
+              <line x1="198" y1="170" x2="224" y2="235"/>
+              <line x1="36" y1="235" x2="15" y2="290"/>
+              <line x1="224" y1="235" x2="245" y2="290"/>
+            </g>
+            <path d="M52 290 Q130 250 208 290"/>
+            <path d="M78 235 Q130 210 182 235"/>
+            <path d="M100 170 Q130 155 160 170"/>
+            <g fill="#fde68a" stroke="none">
+              <circle cx="130" cy="0" r="3"/><circle cx="95" cy="90" r="2.5"/><circle cx="165" cy="90" r="2.5"/>
+              <circle cx="62" cy="170" r="2"/><circle cx="198" y1="170" r="2"/>
+              <circle cx="36" cy="235" r="2"/><circle cx="224" cy="235" r="2"/>
+              <circle cx="15" cy="290" r="2"/><circle cx="245" cy="290" r="2"/>
+            </g>
+          </g>
+          <g transform="translate(560,220)">
+            <circle cx="30" cy="20" r="20" fill="#f8fafc" stroke="#1f2937"/>
+            <circle cx="22" cy="15" r="3" fill="#1f2937"/>
+            <circle cx="38" cy="15" r="3" fill="#1f2937"/>
+            <path d="M22 28 Q30 35 38 28" stroke="#1f2937" fill="none" stroke-width="2"/>
+            <path d="M12 8 q18 -10 36 0 q-12 6 -24 6 q-6 0 -12 -6" fill="#111827" stroke="#0b1220"/>
+            <line x1="40" y1="5" x2="48" y2="8" stroke="#111827" stroke-width="3"/>
+            <rect x="10" y="38" width="40" height="28" rx="14" fill="#f8fafc" stroke="#1f2937"/>
+            <g class="wave"><g transform="translate(50,40)"><rect x="-2" y="0" width="4" height="20" rx="2" fill="#f8fafc" stroke="#1f2937"/><circle cx="0" cy="24" r="6" fill="#f8fafc" stroke="#1f2937"/></g></g>
+          </g>
+          <text x="380" y="385" text-anchor="middle" fill="#f8fafc" font-size="32" font-weight="900">TRIP TO PARIS!</text>
+        </svg>
+      </div>
+      <h3 class="title" style="font-size:clamp(24px,4vw,42px); margin:6px 0 4px; letter-spacing:.5px">Trip to Paris</h3>
+      <p class="subtitle" style="color:#cbd5e1; margin:4px 0 10px">Pack your bags — <strong>we’re taking you to Paris!</strong> ✈️🇫🇷</p>
+      <div class="actions" style="justify-content:center; margin-top:12px;">
+        <button class="ghost" id="closeFinale">Close</button>
+      </div>
+      <div id="confetti"></div>
+    </div>
+  </div>
+
+  <script>
+    // ===================== PROGRESS / NAV =====================
+    const bar = document.getElementById('bar');
+    const rooms = ['room1','room2','room3'];
+    let state = JSON.parse(localStorage.getItem('escape.mom.paris.v6.0')||'{}');
+    function showRoom(id){ rooms.forEach(r=>document.getElementById(r).classList.remove('active')); document.getElementById(id).classList.add('active'); const idx=rooms.indexOf(id); bar.style.width=((idx+1)/rooms.length*100)+'%'; state.room=id; saveState(); }
+    function saveState(){ localStorage.setItem('escape.mom.paris.v6.0', JSON.stringify(state)); }
+    function reset(){ localStorage.removeItem('escape.mom.paris.v6.0'); location.reload(); }
+    document.getElementById('reset').addEventListener('click', reset);
+
+    // Utils
+    const rect = el => el.getBoundingClientRect();
+    const setMsg = (id, text, kind='') => { const el=document.getElementById(id); el.textContent=text; el.className='hint'+(kind?(' '+kind):''); };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initRoom1();
+      initRoom2();
+      initRoom3();
+
+      // Self‑tests
+      const sim = window.__mazeSim; if(sim){
+        console.assert(sim(['U','R','R','U','R','U','R','U']).ok===true, 'Mouse: known success path');
+        console.assert(sim(['L']).reason==='wall', 'Mouse: wall detection');
+        console.assert(sim(['U','R','U']).reason==='cat', 'Mouse: cat collision');
+      }
+      console.assert(document.querySelectorAll('#cells .cell').length===25, '5x5 grid cells created');
+      console.assert(document.querySelectorAll('#wineArea [data-kind="cork"]').length===5, 'Wine: 5 corks present');
+      if(window.__riddleHooks){ const H = window.__riddleHooks; console.assert(H.checkSolved({s1:'seine', s2:'louvre', s3:'metro'})===true, 'Riddle: correct mapping'); }
+
+      if(state.room && rooms.includes(state.room)) showRoom(state.room);
+    });
+
+    // ===================== ROOM 1 =====================
+    function initRoom1(){
+      const maze = document.getElementById('maze');
+      const board = document.getElementById('board');
+      const cells = document.getElementById('cells');
+      const mouse = document.getElementById('mouse');
+      const goal = document.getElementById('goal');
+      const startRC=[4,0], goalRC=[0,4];
+      const cats = new Set(['0,3','2,1','4,1']);
+      const rows=5, cols=5, cellSize=66, tokenSize=52, pad=(cellSize-tokenSize)/2;
+      const W=cols*cellSize, H=rows*cellSize; [board,cells,maze].forEach(el=>{ el.style.width=W+'px'; el.style.height=H+'px'; });
+      cells.innerHTML=''; for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ const d=document.createElement('div'); d.className='cell'+(((r+c)%2)?' alt':''); d.style.left=(c*cellSize)+'px'; d.style.top=(r*cellSize)+'px'; d.style.width=cellSize+'px'; d.style.height=cellSize+'px'; cells.appendChild(d);} }
+      const placeToken=(el,r,c)=>{ el.style.left=(c*cellSize+pad)+'px'; el.style.top=(r*cellSize+pad)+'px'; };
+      [...maze.querySelectorAll('[data-cell]')].forEach(el=>{ const [r,c]=el.dataset.cell.split(',').map(Number); el.classList.add('obstacle'); placeToken(el,r,c); });
+      placeToken(goal, goalRC[0], goalRC[1]);
+      const placeMouse=(r,c)=> placeToken(mouse,r,c); placeMouse(...startRC);
+
+      const seqEl = document.getElementById('seq'); const slots = new Array(8);
+      for(let i=0;i<8;i++){
+        const s=document.createElement('div'); s.className='seq-slot'; s.dataset.index=String(i);
+        s.onclick=()=>onSlotClick(i);
+        s.oncontextmenu=(e)=>{e.preventDefault(); clearSlot(i)};
+        s.addEventListener('dragover', e=>{ e.preventDefault(); s.classList.add('active'); });
+        s.addEventListener('dragleave', ()=> s.classList.remove('active'));
+        s.addEventListener('drop', e=>{ e.preventDefault(); s.classList.remove('active'); const dir = e.dataTransfer.getData('text/dir'); const from = e.dataTransfer.getData('text/from'); const src = parseInt(e.dataTransfer.getData('text/src')||'-1',10); if(!dir) return; if(from==='palette'){ placeFromPalette(i, dir); } else if(from==='slot' && src>=0){ if(src===i) return; const a=getSlot(src), b=getSlot(i); clearSlot(src); clearSlot(i); if(b) setSlot(src,b); if(a) setSlot(i,a); } });
+        seqEl.appendChild(s); slots[i]=s;
+      }
+      function arrow(d){ return d==='U'? '\u2191' : d==='R'? '\u2192' : d==='D'? '\u2193' : '\u2190'; }
+      function label(d){ return d==='U'? 'Up' : d==='R'? 'Right' : d==='D'? 'Down' : 'Left'; }
+      function guard(i){ return Number.isInteger(i) && i>=0 && i<slots.length && !!slots[i]; }
+      function isEmpty(i){ return guard(i) && !slots[i].querySelector('.token'); }
+      function token(dir, index){ const t=document.createElement('div'); t.className='token'; t.textContent=arrow(dir); t.dataset.dir=dir; t.draggable=true; t.title=label(dir)+" — drag to another slot or right‑click to clear"; t.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/dir', dir); e.dataTransfer.setData('text/from','slot'); e.dataTransfer.setData('text/src', String(index)); e.dataTransfer.effectAllowed='move'; setDragImage(e, t); }); return t; }
+      function setSlot(i, dir){ if(!guard(i) || !dir) return; slots[i].innerHTML=''; slots[i].appendChild(token(dir, i)); slots[i].classList.add('filled'); }
+      function getSlot(i){ if(!guard(i)) return ''; const t=slots[i].querySelector('.token'); return t? t.dataset.dir : ''; }
+      function clearSlot(i){ if(!guard(i)) return; slots[i].innerHTML=''; slots[i].classList.remove('filled'); if(selected===i) slots[i].classList.remove('active'); if(swapIndex===i) swapIndex=-1; }
+      let selected=-1, swapIndex=-1;
+      function select(i){ if(guard(selected)) slots[selected].classList.remove('active'); selected = guard(i)? i : -1; if(guard(selected)) slots[selected].classList.add('active'); }
+      function onSlotClick(i){ if(!guard(i)) return; if(swapIndex===-1){ swapIndex=i; select(i); } else if(swapIndex===i){ swapIndex=-1; select(-1); } else { const a=getSlot(swapIndex), b=getSlot(i); clearSlot(swapIndex); clearSlot(i); if(b) setSlot(swapIndex,b); if(a) setSlot(i,a); swapIndex=-1; select(-1);} }
+      const palette=document.getElementById('palette1');
+      palette.querySelectorAll('[data-dir]').forEach(btn=>{ const dir=btn.dataset.dir; btn.addEventListener('click', ()=>{ clickAdd(dir); }); btn.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/dir', dir); e.dataTransfer.setData('text/from','palette'); e.dataTransfer.effectAllowed='copy'; setDragImage(e, btn); }); });
+      document.getElementById('erase').onclick=()=>{ if(guard(selected)) clearSlot(selected); };
+      function nextEmpty(){ for(let i=0;i<slots.length;i++){ if(!getSlot(i)) return i; } return -1; }
+      function setDragImage(e, el){ try{ const g=el.cloneNode(true); g.style.position='absolute'; g.style.top='-9999px'; g.style.left='-9999px'; document.body.appendChild(g); e.dataTransfer.setDragImage(g, g.offsetWidth/2, g.offsetHeight/2); setTimeout(()=>g.remove(),0);}catch(_){} }
+      function placeFromPalette(targetIndex, dir){ if(!guard(targetIndex)) return; if(isEmpty(targetIndex)) { setSlot(targetIndex, dir); select(targetIndex); return; } const j = nextEmpty(); if(guard(j)) { setSlot(j, dir); select(j); } else { setMsg('msg1','All 8 slots are filled — remove or swap to change.','error'); } }
+      function clickAdd(dir){ const idx = guard(selected)? selected : nextEmpty(); if(!guard(idx)) { setMsg('msg1','All 8 slots are filled — remove or swap to change.','error'); return; } if(isEmpty(idx)) setSlot(idx,dir); else placeFromPalette(idx,dir); }
+      function simulate(seq){ let r=startRC[0], c=startRC[1]; for(const mv of seq){ if(mv==='U') r--; else if(mv==='D') r++; else if(mv==='L') c--; else if(mv==='R') c++; if(r<0||c<0||r>=rows||c>=cols) return {ok:false, reason:'wall'}; if(cats.has(`${r},${c}`)) return {ok:false, reason:'cat'}; } return {ok:(r===goalRC[0]&&c===goalRC[1]), reason:(r===goalRC[0]&&c===goalRC[1]?'ok':'miss')}; }
+      function animate(seq){ let r=startRC[0], c=startRC[1], i=0; placeMouse(r,c); const step=()=>{ if(i>=seq.length){ if(r===goalRC[0]&&c===goalRC[1]){ setMsg('msg1','Cheese secured!','success'); setTimeout(()=>showRoom('room2'), 700); confetti(); } else setMsg('msg1','Didn’t reach the cheese. Tweak the plan.','error'); return; } const mv=seq[i++]; if(mv==='U') r--; else if(mv==='D') r++; else if(mv==='L') c--; else if(mv==='R') c++; if(r<0||c<0||r>=rows||c>=cols){ setMsg('msg1','Ouch! Hit the wall.','error'); return; } if(cats.has(`${r},${c}`)){ setMsg('msg1','Cat spotted! Try another route.','error'); return; } placeMouse(r,c); setTimeout(step, 230); }; step(); }
+      document.getElementById('run1').onclick=()=>{ const seq=[...Array(8)].map((_,i)=>getSlot(i)); if(seq.some(s=>!s)){ setMsg('msg1','Fill all 8 slots.','error'); return; } const res=simulate(seq); if(res.ok) setMsg('msg1','Looks good — running…',''); else if(res.reason==='wall') setMsg('msg1','That plan hits a wall.','error'); else if(res.reason==='cat') setMsg('msg1','That plan meets a cat.','error'); animate(seq); };
+      document.getElementById('clear1').onclick=()=>{ for(let i=0;i<8;i++) clearSlot(i); select(-1); placeMouse(...startRC); setMsg('msg1','', ''); };
+      document.getElementById('hint1').onclick=()=> setMsg('msg1','Mostly ↑ and →. Some straight lines are blocked by cats.','');
+      window.__mazeSim = simulate;
+    }
+
+    // ===================== ROOM 2 =====================
+    function initRoom2(){
+      const area = document.getElementById('wineArea');
+      const slots = [...area.querySelectorAll('.drop')];
+      const tokens = [...area.querySelectorAll('.cork[data-kind="cork"]')];
+      const occ = {A:null, B:null, C:null};
+      function centerIn(el, s){ const sb = rect(s); const ab = rect(area); const cx = sb.left + sb.width/2 - ab.left; const cy = sb.top + sb.height/2 - ab.top; el.style.left = (cx - el.offsetWidth/2) + 'px'; el.style.top  = (cy - el.offsetHeight/2) + 'px'; }
+      tokens.forEach(t=>{ t.dataset.homeLeft = (parseInt(t.style.left)||0); t.dataset.homeTop  = (parseInt(t.style.top)||0); t.style.touchAction = 'none'; let sx=0, sy=0, ox=0, oy=0, dragging=false; t.addEventListener('pointerdown', e=>{dragging=true; t.setPointerCapture(e.pointerId); sx=e.clientX; sy=e.clientY; ox=parseFloat(t.style.left)||0; oy=parseFloat(t.style.top)||0; t.style.zIndex=10; }); t.addEventListener('pointermove', e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; t.style.left=(ox+dx)+'px'; t.style.top=(oy+dy)+'px'; }); t.addEventListener('pointerup', e=>{ if(!dragging) return; dragging=false; t.style.zIndex=''; let hit=null; const b=rect(t); for(const s of slots){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } if(t.dataset.slot){ const prev = t.dataset.slot; if(occ[prev]===t) occ[prev]=null; } if(hit){ const key = hit.dataset.accept; if(occ[key] && occ[key]!==t){ const other = occ[key]; other.dataset.slot=''; other.style.left=other.dataset.homeLeft+'px'; other.style.top=other.dataset.homeTop+'px'; } occ[key]=t; t.dataset.slot=key; centerIn(t,hit); hit.classList.add('filled'); hit.dataset.val=t.dataset.val; check(); } else { t.dataset.slot=''; t.style.left=t.dataset.homeLeft+'px'; t.style.top=t.dataset.homeTop+'px'; check(); } }); });
+      function val(ch){ return (area.querySelector('.drop[data-accept="'+ch+'"]').dataset.val)||''; }
+      function constraintsOK(){ const A=+val('A'), B=+val('B'), C=+val('C'); return (!!A&&!!B&&!!C) && (A+B===10) && (B<C) && (C-A===3); }
+      function check(){ const ok = constraintsOK(); slots.forEach(s=>{ s.classList.remove('valid','invalid'); if(val(s.dataset.accept)){ s.classList.add(ok? 'valid':'invalid'); } }); const m=document.getElementById('msg2'); if(ok){ m.textContent='*pop* — the cork turns and the cabinet opens!'; m.className='hint success'; setTimeout(()=>showRoom('room3'),700);} else { m.textContent='Place numbers so all three clues are true.'; m.className='hint'; } }
+      document.getElementById('hint2').onclick=()=>{ const m=document.getElementById('msg2'); m.textContent='Try pairs that add to 10 for A+B, then choose C so that C−A=3 and B<C.'; m.className='hint'; };
+    }
+
+    // ===================== ROOM 3 =====================
+    function initRoom3(){
+      const area = document.getElementById('riddleArea');
+      const slotEls = [...area.querySelectorAll('.rslot')];
+      const palette = document.getElementById('riddlePalette');
+      const need = { s1:'seine', s2:'louvre', s3:'metro' };
+      const occ = {}; // slotKey -> tokenEl
+
+      const tokens = [ makeToken('seine', '📚\n🌉\n🌊'), makeToken('louvre', '🖼️\n🔺\n✨'), makeToken('metro', '🚇\nM\n—') ];
+      tokens.forEach(t=> area.appendChild(t));
+
+      function spreadTokens(){ const pb = rect(palette), ab = rect(area); const tokenW = 116; const padX = 24; const left = pb.left - ab.left + padX; const right = pb.right - ab.left - padX; const usable = Math.max(0, right - left - tokenW); const y = pb.top - ab.top + Math.max(12, (pb.height - tokenW)/2); for(let i=0;i<tokens.length;i++){ const x = left + (tokens.length===1 ? usable/2 : (usable/(tokens.length-1))*i); tokens[i].style.left = x + 'px'; tokens[i].style.top  = y + 'px'; tokens[i].dataset.homeLeft = tokens[i].style.left; tokens[i].dataset.homeTop  = tokens[i].style.top; } }
+      window.addEventListener('resize', spreadTokens); requestAnimationFrame(spreadTokens);
+
+      function makeToken(val, face){ const t=document.createElement('div'); t.className='rtoken'; t.dataset.val=val; t.innerHTML='<div class="big">'+face.replaceAll('\n','<br/>')+'</div><div>'+val.toUpperCase()+'</div>'; t.style.left='12px'; t.style.top='12px'; t.style.zIndex=''; t.style.touchAction='none'; let sx=0, sy=0, ox=0, oy=0, dragging=false, hover=null; t.addEventListener('pointerdown', e=>{ dragging=true; t.setPointerCapture(e.pointerId); sx=e.clientX; sy=e.clientY; ox=parseFloat(t.style.left)||0; oy=parseFloat(t.style.top)||0; t.style.zIndex=20; }); t.addEventListener('pointermove', e=>{ if(!dragging) return; const dx=e.clientX-sx, dy=e.clientY-sy; t.style.left=(ox+dx)+'px'; t.style.top=(oy+dy)+'px'; const b=rect(t); let hit=null; for(const s of slotEls){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } if(hover && hover!==hit) hover.classList.remove('hover'); if(hit) hit.classList.add('hover'); hover = hit; }); t.addEventListener('pointerup', e=>{ if(!dragging) return; dragging=false; t.style.zIndex=''; const b=rect(t); let hit=null; for(const s of slotEls){ const r=rect(s); if(!(b.right<r.left||b.left>r.right||b.bottom<r.top||b.top>r.bottom)){ hit=s; break; } } slotEls.forEach(s=>s.classList.remove('hover')); for(const k in occ){ if(occ[k]===t){ delete occ[k]; const old = area.querySelector('.rslot[data-key="'+k+'"]'); if(old){ old.classList.remove('filled'); old.textContent='Drop answer here'; } } } if(hit){ const key=hit.dataset.key; if(occ[key] && occ[key]!==t){ const other=occ[key]; other.style.left=other.dataset.homeLeft; other.style.top=other.dataset.homeTop; } occ[key]=t; centerIn(t, hit); hit.classList.add('filled'); hit.textContent=t.dataset.val.toUpperCase(); check(); } else { t.style.left=t.dataset.homeLeft; t.style.top=t.dataset.homeTop; check(); } }); return t; }
+      function centerIn(el, s){ const sb = rect(s); const ab = rect(area); const cx = sb.left + sb.width/2 - ab.left; const cy = sb.top + sb.height/2 - ab.top; el.style.left = (cx - el.offsetWidth/2) + 'px'; el.style.top  = (cy - el.offsetHeight/2) + 'px'; }
+      function solved(){ return Object.keys(need).every(k=> occ[k] && occ[k].dataset.val===need[k]); }
+      function check(){ if(solved()){ setMsg('msg3','All clues solved — the last door opens!','success'); setTimeout(()=> showFinale(), 720); } else { setMsg('msg3','Match each riddle to its answer.',''); } }
+      document.getElementById('hint3').onclick=()=> setMsg('msg3','Think: river-side bookstalls, a glass pyramid guarding a famous smile, and underground trains marked by a bold red sign.','');
+      window.__riddleHooks = { checkSolved: (map)=> Object.keys(need).every(k=> map[k]===need[k]) };
+    }
+
+    // ===================== FINALE =====================
+    const finale = document.getElementById('finale');
+    document.getElementById('closeFinale')?.addEventListener('click', ()=> finale.style.display='none');
+    function showFinale(){ finale.style.display='grid'; confetti(); }
+
+    // Lightweight confetti
+    function confetti(){ const box=document.getElementById('confetti'); if(!box) return; box.innerHTML=''; const n=120; for(let i=0;i<n;i++){ const s=document.createElement('div'); const size=4+Math.random()*6; s.style.position='absolute'; s.style.left=(10+Math.random()*80)+'%'; s.style.top='-20px'; s.style.width=size+'px'; s.style.height=size+'px'; s.style.background=['#22d3ee','#60a5fa','#f59e0b','#10b981','#e879f9'][i%5]; s.style.opacity='.9'; s.style.transform='rotate('+ (Math.random()*360)+'deg)'; s.style.filter='drop-shadow(0 2px 2px rgba(0,0,0,.2))'; box.appendChild(s); const dur=4+Math.random()*2; s.animate([{transform:s.style.transform, top:'-20px'}, {transform:'rotate('+(360+Math.random()*720)+'deg)', top:'110%'}], {duration: dur*1000, easing:'cubic-bezier(.3,.7,.4,1)', iterations:1, fill:'forwards'}); } setTimeout(()=>{ box.innerHTML=''; }, 7000); }
+  </script>
+</body>
+</html>
