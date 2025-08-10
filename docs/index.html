@@ -598,13 +598,23 @@
       const urls=[
         'https://upload.wikimedia.org/wikipedia/commons/e/e6/Paris_Night.jpg',
         'https://upload.wikimedia.org/wikipedia/commons/a/a6/Paris_ND_de_Paris.jpg',
-        'https://upload.wikimedia.org/wikipedia/commons/8/8d/Louvre_Museum_Wikimedia_Commons.jpg'
+        'https://upload.wikimedia.org/wikipedia/commons/8/8d/Louvre_Museum_Wikimedia_Commons.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/a/a1/Eiffel_Tower_from_the_Trocadero%2C_Paris_5_February_2013.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/5/5e/Arc_de_Triomphe%2C_Paris_21_October_2010.jpg',
+        'https://upload.wikimedia.org/wikipedia/commons/0/02/Sacr%C3%A9-C%C5%93ur_Basilica%2C_Paris.jpg',
+        'https://images.unsplash.com/photo-1522098543979-ffc7f79be1fd?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1534201054487-2b6c8035fc83?auto=format&fit=crop&w=1200&q=80'
       ];
-      const imgs=[]; let loaded=0;
+      const imgs=[]; let started=false;
       function init(){
-        const sprites=[...Array(8)].map(()=>({img:imgs[Math.floor(Math.random()*imgs.length)], x:0, y:0, w:160, h:100, speed:0.3+Math.random()*0.2}));
-        function reset(s){ s.img=imgs[Math.floor(Math.random()*imgs.length)]; s.x=Math.random()*(c.width-s.w); s.y=c.height+Math.random()*c.height; }
-        sprites.forEach(reset);
+        const sprites=[...Array(10)].map(()=>({img:null, x:0, y:0, w:220, h:150, speed:0}));
+        function reset(s, initial=false){
+          s.img=imgs[Math.floor(Math.random()*imgs.length)];
+          s.x=Math.random()*(c.width-s.w);
+          s.y=initial ? Math.random()*c.height : c.height+Math.random()*200;
+          s.speed=0.5+Math.random()*0.4;
+        }
+        sprites.forEach(s=>reset(s,true));
         function loop(){
           ctx.clearRect(0,0,c.width,c.height);
           for(const s of sprites){
@@ -617,10 +627,9 @@
         loop();
       }
       urls.forEach(u=>{
-        const img=new Image();
-        img.onload=img.onerror=()=>{ if(++loaded===urls.length) init(); };
+        const img=new Image(); img.crossOrigin='anonymous';
+        img.onload=()=>{ imgs.push(img); if(!started){ started=true; init(); } };
         img.src=u;
-        imgs.push(img);
       });
     }
 
