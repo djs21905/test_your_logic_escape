@@ -302,7 +302,8 @@
     <!-- ===================== FINALE ===================== -->
     <div class="finale" id="finale"
       style="position:fixed; inset:0; display:none; place-items:center; background:rgba(5,10,20,.92); z-index:50; backdrop-filter:blur(6px); overflow:hidden">
-      <canvas id="parisCanvas" style="position:absolute; inset:0; z-index:0"></canvas>
+      <canvas id="parisCanvas"
+        style="position:absolute; inset:0; z-index:0"></canvas>
       <div class="box"
         style="position:relative; z-index:1; background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0)); border:1px solid #2a3240; border-radius:24px; padding:24px; max-width:900px; text-align:center; box-shadow:0 30px 60px rgba(0,0,0,.45)">
         <div class="poster"
@@ -606,40 +607,54 @@
       function resize(){ c.width=finale.clientWidth; c.height=finale.clientHeight; }
       window.addEventListener('resize', resize); resize();
       const urls=[
-        'https://upload.wikimedia.org/wikipedia/commons/e/e6/Paris_Night.jpg',
-        'https://upload.wikimedia.org/wikipedia/commons/a/a6/Paris_ND_de_Paris.jpg',
-        'https://upload.wikimedia.org/wikipedia/commons/8/8d/Louvre_Museum_Wikimedia_Commons.jpg',
-        'https://upload.wikimedia.org/wikipedia/commons/a/a1/Eiffel_Tower_from_the_Trocadero%2C_Paris_5_February_2013.jpg',
-        'https://upload.wikimedia.org/wikipedia/commons/5/5e/Arc_de_Triomphe%2C_Paris_21_October_2010.jpg',
-        'https://upload.wikimedia.org/wikipedia/commons/0/02/Sacr%C3%A9-C%C5%93ur_Basilica%2C_Paris.jpg',
-        'https://images.unsplash.com/photo-1522098543979-ffc7f79be1fd?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1534201054487-2b6c8035fc83?auto=format&fit=crop&w=1200&q=80'
+      'https://upload.wikimedia.org/wikipedia/commons/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/c/c4/Arc_Triomphe.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/6/66/Louvre_Museum_Wikimedia_Commons.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/0/08/Sacre-Coeur_Basilica%2C_Paris.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/3/33/Paris_Panorama.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/1/14/Champ_de_Mars_from_the_Eiffel_Tower_-_July_2006.jpg'
       ];
       const imgs=[]; let started=false;
       function init(){
-        const sprites=[...Array(10)].map(()=>({img:null, x:0, y:0, w:220, h:150, speed:0}));
-        function reset(s, initial=false){
-          s.img=imgs[Math.floor(Math.random()*imgs.length)];
-          s.x=Math.random()*(c.width-s.w);
-          s.y=initial ? Math.random()*c.height : c.height+Math.random()*200;
-          s.speed=0.5+Math.random()*0.4;
+      // Ensure each image is used at least once before repeats
+      const spriteCount = Math.max(10, imgs.length);
+      let imgOrder = [];
+      function refillImgOrder() {
+        imgOrder = [...imgs];
+        // Shuffle
+        for (let i = imgOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [imgOrder[i], imgOrder[j]] = [imgOrder[j], imgOrder[i]];
         }
-        sprites.forEach(s=>reset(s,true));
-        function loop(){
-          ctx.clearRect(0,0,c.width,c.height);
-          for(const s of sprites){
-            s.y-=s.speed;
-            if(s.y+s.h<0) reset(s);
-            ctx.drawImage(s.img, s.x, s.y, s.w, s.h);
-          }
-          requestAnimationFrame(loop);
+      }
+      refillImgOrder();
+      const sprites = [...Array(spriteCount)].map(()=>({img:null, x:0, y:0, w:220, h:150, speed:0}));
+      function nextImg() {
+        if (imgOrder.length === 0) refillImgOrder();
+        return imgOrder.pop();
+      }
+      function reset(s, initial=false){
+        s.img = nextImg();
+        s.x = Math.random() * (c.width - s.w);
+        s.y = initial ? Math.random() * c.height : c.height + Math.random() * 200;
+        s.speed = 0.5 + Math.random() * 0.4;
+      }
+      sprites.forEach(s=>reset(s,true));
+      function loop(){
+        ctx.clearRect(0,0,c.width,c.height);
+        for(const s of sprites){
+        s.y -= s.speed;
+        if(s.y + s.h < 0) reset(s);
+        ctx.drawImage(s.img, s.x, s.y, s.w, s.h);
         }
-        loop();
+        requestAnimationFrame(loop);
+      }
+      loop();
       }
       urls.forEach(u=>{
-        const img=new Image(); img.crossOrigin='anonymous';
-        img.onload=()=>{ imgs.push(img); if(!started){ started=true; init(); } };
-        img.src=u;
+      const img=new Image(); img.crossOrigin='anonymous';
+      img.onload=()=>{ imgs.push(img); if(imgs.length === urls.length && !started){ started=true; init(); } };
+      img.src=u;
       });
     }
 
